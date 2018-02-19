@@ -1,31 +1,47 @@
-CC	= gcc
-LD	= gcc
+# CC	= gcc
+# LD	= gcc
+#
+# CFLAGS	= -g -Wall
+# CFLAGS	+= -I.
+# LDFLAGS	= libinterrupt.a
+# HEADERS = server.h
+#
+#
+# OBJS	= doubleLinkedList.o server.o
+#
+# LIBS	= -lm -lrt
+#
+# SRCS	= $(patsubst %.o,%.c,$(OBJS))
+#
+# PRGS	= main
+#
+# all: libinterrupt.a $(PRGS)
+#
+# libinterrupt.a:
+# 	ar -rv libinterrupt.a
+#
+# %.o: %.c $(HEADERS)
+# 	$(CC) $(CFLAGS) -c $*.c $(INCLUDE) -o $@ $(LIBS)
+#
+# $(PRGS): $(OBJS)
+# $(PRGS): $(LIBS)
+# $(PRGS): % : %.o
+# 	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS) $(LIBS)
+#
+# clean:
+# 	-rm -f *.o *.a *~ $(PRGS)
 
-CFLAGS	= -g -Wall
-CFLAGS	+= -I.
-LDFLAGS	=
-HEADERS =
+ HEADERS = server.h
 
+ PRGS = main
 
-OBJS	= list.o
+ default: main
 
-LIBS	=
+ main.o: main.c $(HEADERS)
+		gcc -c main.c -o main.o
 
-SRCS	= $(patsubst %.o,%.c,$(OBJS))
-
-PRGS	= doubleLinkedList
-
-all:  $(PRGS)
-
-libinterrupt.a:
-
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $*.c $(INCLUDE) -o $@ $(LIBS)
-
-$(PRGS): $(OBJS)
-$(PRGS): $(LIBS)
-$(PRGS): % : %.o
-	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS) $(LIBS)
+main: main.o
+		gcc main.o -o main
 
 clean:
-	-rm -f *.o *.a *~ $(PRGS)
+		-rm -f *.o *.a *~ $(PRGS)
