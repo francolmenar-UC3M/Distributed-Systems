@@ -5,7 +5,7 @@
 /*https://www.tutorialspoint.com/data_structures_algorithms/doubly_linked_list_program_in_c.htm*/
 
 /*Each node is a triplet*/
-struct node {
+static struct node {
    int key;//The key of the triplet
    char value1[256];//First value of the triplet
    float value2;//Second value of the triplet
@@ -15,19 +15,19 @@ struct node {
 };
 
 //this link always point to first Link
-struct node *head = NULL;
+static struct node *head = NULL;
 
 //this link always point to last Link
-struct node *last = NULL;
+static struct node *last = NULL;
 
-struct node *current = NULL;
+static struct node *current = NULL;
 
 //is list empty
-bool isEmpty() {
+static bool isEmpty() {
    return head == NULL;
 }
 
-int length() {
+static int length() {
    int length = 0;
    struct node *current;
 
@@ -39,7 +39,7 @@ int length() {
 }
 
 //display the list in from first to last
-void displayForward() {
+static void displayForward() {
 
    //start from the beginning
    struct node *ptr = head;
@@ -56,7 +56,7 @@ void displayForward() {
 }
 
 //display the list from last to first
-void displayBackward() {
+static void displayBackward() {
 
    //start from the last
    struct node *ptr = last;
@@ -78,7 +78,7 @@ void displayBackward() {
 }
 
 //insert link at the first location
-void insertFirst(int key, char* value1, float value2) {
+static void insertFirst(int key, char* value1, float value2) {
 
    //create a link
    struct node *link = (struct node*) malloc(sizeof(struct node));
@@ -102,7 +102,7 @@ void insertFirst(int key, char* value1, float value2) {
 }
 
 //insert link at the last location
-void insertLast(int key,  char* value1, float value2) {
+static void insertLast(int key,  char* value1, float value2) {
 
    //create a link
    struct node *link = (struct node*) malloc(sizeof(struct node));
@@ -126,7 +126,7 @@ void insertLast(int key,  char* value1, float value2) {
 }
 
 //delete first item
-struct node* deleteFirst() {
+static struct node* deleteFirst() {
 
    //save reference to first link
    struct node *tempLink = head;
@@ -144,8 +144,7 @@ struct node* deleteFirst() {
 }
 
 //delete link at the last location
-
-struct node* deleteLast() {
+static struct node* deleteLast() {
    //save reference to last link
    struct node *tempLink = last;
 
@@ -163,8 +162,7 @@ struct node* deleteLast() {
 }
 
 //delete a link with given key
-
-struct node* delete(int key) {
+static struct node* delete(int key) {
 
    //start from the first link
    struct node* current = head;
@@ -209,7 +207,56 @@ struct node* delete(int key) {
    return current;
 }
 
-bool insertAfter(int key, int newKey, char* value1, float value2) {
+
+/*It checks if an element exists in the list*/
+static bool contain(int key){
+  //start from the first link
+  struct node *current = head;
+
+  //if list is empty
+  if(head == NULL) {
+     return false;
+  }
+
+  //navigate through list
+  while(current->key != key) {
+     //if it is last node
+     if(current->next == NULL) {
+        return false;
+     } else {
+        //move to next link
+        current = current->next;
+     }
+  }
+  return true;
+}
+
+/*It copies the values of a given triplet into the memory addreses*/
+static bool obtainElement(int key, char *value1, float *value2){
+  //start from the first link
+  struct node *current = head;
+
+  //if list is empty
+  if(head == NULL) {
+     return false;
+  }
+
+  //navigate through list
+  while(current->key != key) {
+     //if it is last node
+     if(current->next == NULL) {
+        return false;
+     } else {
+        //move to next link
+        current = current->next;
+     }
+  }
+  strcpy(value1, current -> value1);
+  value2 = &(current -> value2);
+  return true;
+}
+
+static bool insertAfter(int key, int newKey, char* value1, float value2) {
    //start from the first link
    struct node *current = head;
 
@@ -233,7 +280,6 @@ bool insertAfter(int key, int newKey, char* value1, float value2) {
    //create a link
    struct node *newLink = (struct node*) malloc(sizeof(struct node));
    newLink->key = newKey;
-   strcpy(newLink->value1,value1);
    newLink->value2 = value2;
 
    if(current == last) {
@@ -247,37 +293,4 @@ bool insertAfter(int key, int newKey, char* value1, float value2) {
    newLink->prev = current;
    current->next = newLink;
    return true;
-}
-/*
-main() {
-   insertFirst(1,"Uno",10.0);
-   insertFirst(2,"Dos",20.0);
-   insertFirst(3,"Tres",30.0);
-   insertFirst(4,"Cuatro",1.0);
-   insertFirst(5,"Cinco",40.0);
-   insertFirst(6,"Seis",56.0);
-
-   printf("\nList (First to Last): ");
-   displayForward();
-
-   printf("\n");
-   printf("\nList (Last to first): ");
-   displayBackward();
-
-   printf("\nList , after deleting first record: ");
-   deleteFirst();
-   displayForward();
-
-   printf("\nList , after deleting last record: ");
-   deleteLast();
-   displayForward();
-
-   printf("\nList , insert after key(4) : ");
-   insertAfter(4,7,"Nuevo", 13.0);
-   displayForward();
-
-   printf("\nList  , after delete key(4) : ");
-   delete(4);
-   displayForward();
-}
-*/
+ }
