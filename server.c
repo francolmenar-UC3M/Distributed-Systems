@@ -62,21 +62,35 @@
   It returns 0 in success and -1 on error*/
   static int get_value(int key, char *value1, float *value2){
     if(!contain(key)) return -1;//The triplet does not exist
-    if(obtainElement(key, value1, value2)){//I get the values of the triplets
-      return 0;
+    if(obtainElement(key, value1, value2) < 0){//I get the values of the triplets
+      return -1;
     }
-    return -1;
+    return 0;
   }
 
   /*Modifies the values associated with a key
   It returns 0 in success and -1 on error
   Not existing an element with that key is considered an error*/
-  static int modify_value(int key, char *value1, float *value2){return -1;}
+  static int modify_value(int key, char *value1, float *value2){
+    if(!contain(key)) return -1;//The triplet does not exist
+    if(!changeValues(key, value1, value2)){//I change the values of the triplet
+      return -1;
+    }
+    return 0;
+  }
 
   /*It deletes an element
   Not existing an element with that key is considered an error*/
-  static int delete_key(int key){return -1;}
+  static int delete_key(int key){
+    if(!contain(key)) return -1;//The triplet does not exist
+    if(delete(key) == NULL){//I delete the triplet
+      return -1;
+    }
+    return 0;
+  }
 
   /*It stores the number of elements stored
   It returns 0 in success and -1 on error*/
-  static int num_items(){return -1;}
+  static int num_items(){
+    return length();
+  }

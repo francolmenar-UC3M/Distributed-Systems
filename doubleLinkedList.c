@@ -34,7 +34,6 @@ static int length() {
    for(current = head; current != NULL; current = current->next){
       length++;
    }
-
    return length;
 }
 
@@ -203,10 +202,8 @@ static struct node* delete(int key) {
    } else {
       current->next->prev = current->prev;
    }
-
    return current;
 }
-
 
 /*It checks if an element exists in the list*/
 static bool contain(int key){
@@ -252,9 +249,35 @@ static bool obtainElement(int key, char *value1, float *value2){
      }
   }
   strcpy(value1, current -> value1);
-  value2 = &(current -> value2);
+  *value2 = current -> value2;
   return true;
 }
+
+/*It changes the values of a given triplet*/
+static bool changeValues(int key, char *value1, float *value2){
+  //start from the first link
+  struct node *current = head;
+
+  //if list is empty
+  if(head == NULL) {
+     return false;
+  }
+
+  //navigate through list
+  while(current->key != key) {
+     //if it is last node
+     if(current->next == NULL) {
+        return false;
+     } else {
+        //move to next link
+        current = current->next;
+     }
+  }
+  strcpy(current -> value1, value1);
+  current -> value2 = *value2;
+  return true;
+}
+
 
 static bool insertAfter(int key, int newKey, char* value1, float value2) {
    //start from the first link

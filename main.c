@@ -66,30 +66,104 @@ int testSet_value(){
 /*It test the get_value method
 It returns 0 in success and -1 on error*/
 int testGet_value(){
-  /*
-  int key = 20;
-  char value1 = "Test";
-  float value2 = 280.0
-  */
+  init();//I initialize the list so the list should be empty
   fillList();//I fill the list with trivial elements
   char value1[256];//Auxiliary variables
-  float value2 = 280.0;
-  strcpy(value1, "Test");
+  float value2 = 2.0;
   if(get_value(1, value1, &value2) < 0){
     printf("ERROR testGet_value\n");
     return-1;
   }
-  else{
-    printf("%s, %f\n",value1, value2);
+  else if(value2 == 10.0 && strcmp(value1,"Uno\n")){
+    printf("It contains the correct values %f and %s (CORRECT)\n", value1, value2);
     return 0;
   }
+  else{
+    printf("ERROR testGet_value\n");
+    return-1;
+  }
+}
 
+/*It test the get_value method
+It returns 0 in success and -1 on error*/
+int testModify_value(){
+  init();//I initialize the list so the list should be empty
+  fillList();//I fill the list with trivial elements
+  float value2 = 99.0;
+  if(modify_value(1, "New", &value2) < 0){//I modify the value of 1
+    printf("ERROR testModify_value\n");
+    return-1;
+  }
+  else{
+    value2 = 35.0;//I change the original value of the variable to make sure there is no problem with its pointer
+    float value3 = 0.0;//Auxiliary variable
+    char value1[256];
+    if(get_value(1, value1, &value3) < 0){
+      printf("ERROR testModify_value\n");
+      return-1;
+    }
+    else if(value3 == 99.0 && strcmp(value1,"New\n")){
+      printf("Values modified correctly (CORRECT)\n");
+      return 0;
+    }
+    else{
+      printf("ERROR testModify_value %s %f\n", value1, value3);
+      return-1;
+    }
+  }
+}
+
+/*It test the delete_key method
+It returns 0 in success and -1 on error*/
+int testDelete_key(){
+  init();//I initialize the list so the list should be empty
+  fillList();//I fill the list with trivial elements
+  int oldLength = length(), newLength;//Auxiliary variables
+  if(delete_key(1) < 0){//I delete the first element
+    printf("ERROR testDelete_key\n");
+    return-1;
+  }
+  newLength = length();
+  if( (oldLength -1) != newLength){//I check if the length is correct
+    printf("ERROR testDelete_key length\n");
+    return-1;
+  }
+  if(contain(1)){//I check if the list contains the element deleted
+    printf("ERROR testDelete_key contain\n");
+    return-1;
+  }
+  printf("Triplet deleted correctly (CORRECT)\n");
+  return 0;
+}
+
+/*It test the num_items method
+It returns 0 in success and -1 on error*/
+int testNum_items(){
+  init();//I initialize the list so the list should be empty
+  fillList();//I fill the list with trivial elements
+  if(num_items() != 6){
+    printf("ERROR testNum_items\n");
+    return-1;
+  }
+  printf("Correct number of items (CORRECT)\n");
+  return 0;
+}
+
+/*I run all the tests
+It returns 0 in success and -1 if any test fails*/
+int testAll(){
+  int check = 0;//Variable to know if any test fails
+  check =- testInit();
+  check =- testContain();
+  check =- testSet_value();
+  check =- testGet_value();
+  check =- testModify_value();
+  check =- testDelete_key();
+  check =- testNum_items();
+  return check;
 }
 
 int main(int argc, char *argv[]){
-  testInit();
-  testContain();
-  testSet_value();
-  testGet_value();
+  testAll();
   return 0;
 }
