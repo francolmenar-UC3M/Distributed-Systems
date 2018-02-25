@@ -5,7 +5,7 @@
 /*https://www.tutorialspoint.com/data_structures_algorithms/doubly_linked_list_program_in_c.htm*/
 
 /*Each node is a triplet*/
-static struct node {
+struct node {
    int key;//The key of the triplet
    char value1[256];//First value of the triplet
    float value2;//Second value of the triplet
@@ -277,7 +277,6 @@ static bool changeValues(int key, char *value1, float *value2){
   current -> value2 = *value2;
   return true;
 }
-
 
 static bool insertAfter(int key, int newKey, char* value1, float value2) {
    //start from the first link

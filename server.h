@@ -1,6 +1,29 @@
-#include  <stdio.h>
-#include  <stdlib.h>
-#include  <string.h>
+  #include <mqueue.h>
+  #include <pthread.h>
+  #include <stdio.h>
+  #include <string.h>
+  #include <sys/types.h>
+  #include <stdio.h>
+
+
+  #define TRUE 1
+  #define FALSE 0
+
+  /* mutex and condition variables for the message copy */
+  pthread_mutex_t mutex_msg;
+  int msg_not_copied = TRUE;        /* TRUE = 1 */
+  pthread_cond_t cond_msg;
+
+  /*It determines which is the action to be executed
+  It returns 0 in success and -1 on error*/
+  int chooseAction(struct request *msg_local);
+
+  /*It sends the response to the client*/
+  int send(int error, struct request *msg_local);
+
+  /*It process the request calling the desired method
+  It returns 0 in success and -1 on error*/
+  int request_process(struct request *msg);
 
   /*It allows the initialization of the system
   All the triplets stored in the system are destroyed
