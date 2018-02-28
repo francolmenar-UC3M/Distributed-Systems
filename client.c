@@ -1,14 +1,9 @@
 #include "mensaje.h"
-#include <mqueue.h>
-#include <string.h>
-#include <sys/types.h>
-#include <stdio.h>
-
 #include "keys.c"
+#define CLIENT "/Falcó"
 
-int main(void) {
-  printf("I init the data base\n");
-  init();
+
+static int normalExe(){
   printf("I set 1, 2 and 3\n");
   set_value(1, "Uno", 1.0);
   set_value(2, "Dos", 2.0);
@@ -28,5 +23,26 @@ int main(void) {
   delete_key(1);
   int n = num_items();
   printf("Number of elements: %i\n", n);
+  return 0;
+}
+
+int main(void) {
+  pthread_attr_t t_attr;     /*thread atributes*/
+  pthread_t clients;
+  if(pthread_attr_init(&t_attr) != 0){ /*thread's attribute*/
+    perror("Can’t initialize the attributes\n");
+    return -1;
+  }
+  if(pthread_attr_setdetachstate(&t_attr, PTHREAD_CREATE_DETACHED) != 0){ /*detached thread*/
+    perror("Can’t set the thread as detachable\n");
+    return -1;
+  }
+  if(pthread_create(&clients, &t_attr,  (void *) (*normalExe), NULL) != 0){ /*I create a thread*/
+      perror("Can’t create the thread\n");
+      return -1;
+  }
+  while(1){
+
+  }
   return 0;
 }

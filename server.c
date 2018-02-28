@@ -2,8 +2,6 @@
   #include "server.h"
   #include "doubleLinkedList.c"
 
-  #define PRINTEA 0 //If it is 1 the messages are printed
-
 
   /*It determines which is the action to be executed
   It returns 0 in success and -1 on error*/
@@ -100,6 +98,7 @@
     if (pthread_mutex_lock(&mutex_msg) != 0) {
       send(-1, &msg_local); /*send an error signal to the client */
       perror("Can’t lock the mutex");
+      pthread_exit(0);
       return -1;
     }
     memcpy((char *) &msg_local, msg, sizeof(struct request));
@@ -109,21 +108,25 @@
     if (pthread_cond_signal(&cond_msg) != 0) {
       send(-1, &msg_local); /*send an error signal to the client */
       perror("Can’t lock the mutex");
+      pthread_exit(0);
       return -1;
     }
     if (pthread_mutex_unlock(&mutex_msg) != 0) {
       send(-1, &msg_local); /*send an error signal to the client */
       perror("Can’t lock the mutex\n");
+      pthread_exit(0);
       return -1;
     }
 
     if(chooseAction(&msg_local) < 0){ /*I choose the action that has to be executed*/
-      perror("Can’t locate the action to be executed\n");
+      send(-1, &msg_local); /*send an error signal to the client */
+      pthread_exit(0);
       return -1;
     }
     if(send(0,&msg_local) < 0){ /*I send the response to the client*/
       send(-1, &msg_local); /*send an error signal to the client */
       perror("Can’t send the response\n");
+      pthread_exit(0);
       return -1;
     }
     displayForward();
@@ -131,13 +134,43 @@
     pthread_exit(0);
   }
 
+  /*It locks the muex associated to the list's operations
+    It checks the global variable too for avoiding false signals*/
+  static int lockMutex(){
+    if (pthread_mutex_lock(&mutex_list) != 0) {
+            perror("Can’t lock the mutex");
+            return -1;
+    }
+    while (list_not_finished) /*waiting while the list is being used*/
+            pthread_cond_wait(&cond_list, &mutex_list);
+    list_not_finished = TRUE; /* TRUE = 1 */
+    return 0;
+  }
+
+  /*It unlocks the mutex associated to the list's operations
+    It changes the global variable too*/
+  static int unlockMutex(){
+    list_not_finished = FALSE; /* FALSE = 0 */
+    if (pthread_cond_signal(&cond_list) != 0) { /*send the signal*/
+      perror("Can’t lock the mutex");
+      return -1;
+    }
+    if (pthread_mutex_unlock(&mutex_list) != 0) { /*unlock the mutex*/
+      perror("Can’t lock the mutex\n");
+      return -1;
+    }
+    return 0;
+  }
+
   /*It allows the initialization of the system
   All the triplets stored in the system are destroyed
   It returns 0 in success and -1 on error*/
   static int init(){
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
     while(!isEmpty()){//I executed the loop until the list is empty
       deleteFirst();//I delete the first element
     }
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
     return 0;
   }
 
@@ -145,9 +178,19 @@
   It returns 0 in success and -1 on error
   Trying to insert a key that already exists is considered an error*/
   static int set_value(int key, char *value1, float value2){
-    if(contain(key)) return -1;//There is already a triplet with the same key
-    else if(length() > 0) insertLast(key, value1, value2);//If the list is not empty I store it at the end
-    else insertFirst(key, value1, value2);//As the list is empty I store it at the beginning
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
+    if(contain(key)){
+      unlockMutex();
+      return -1;//There is already a triplet with the same key
+    }
+    else if(length() > 0){
+      printf("last\n");
+      insertLast(key, value1, value2);//If the list is not empty I store it at the end
+    }
+    else {
+      insertFirst(key, value1, value2);//As the list is empty I store it at the beginning
+    }
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
     return 0;
   }
 
@@ -155,10 +198,16 @@
   The values are returned in value1 value2
   It returns 0 in success and -1 on error*/
   static int get_value(int key, char *value1, float *value2){
-    if(!contain(key)) return -1;//The triplet does not exist
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
+    if(!contain(key)){
+      unlockMutex();
+      return -1;//The triplet does not exist
+    }
     if(!obtainElement(key, value1, value2)){//I get the values of the triplets
+      unlockMutex();
       return -1;
     }
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
     return 0;
   }
 
@@ -166,27 +215,42 @@
   It returns 0 in success and -1 on error
   Not existing an element with that key is considered an error*/
   static int modify_value(int key, char *value1, float *value2){
-    if(!contain(key)) return -1;//The triplet does not exist
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
+    if(!contain(key)){
+      unlockMutex();
+      return -1;//The triplet does not exist
+    }
     if(!changeValues(key, value1, value2)){//I change the values of the triplet
+      unlockMutex();
       return -1;
     }
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
     return 0;
   }
 
   /*It deletes an element
   Not existing an element with that key is considered an error*/
   static int delete_key(int key){
-    if(!contain(key)) return -1;//The triplet does not exist
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
+    if(!contain(key)){
+      unlockMutex();
+      return -1;//The triplet does not exist
+    }
     if(delete(key) == NULL){//I delete the triplet
+      unlockMutex();
       return -1;
     }
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
     return 0;
   }
 
   /*It stores the number of elements stored
   It returns 0 in success and -1 on error*/
   static int num_items(){
-    return length();
+    if(lockMutex() < 0) return -1; /*I lock the mutex*/
+    int aux = length();
+    if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
+    return aux;
   }
 
   int main(void){
@@ -204,11 +268,19 @@
             perror("Can’t create server queue");
             return -1;
     }
-    if(pthread_mutex_init(&mutex_msg, NULL) != 0){  /*mutex*/
+    if(pthread_mutex_init(&mutex_msg, NULL) != 0){  /*message mutex*/
+      perror("Can’t initialize the mutex\n");
+      return -1;
+    }
+    if(pthread_mutex_init(&mutex_list, NULL) != 0){  /*list mutex*/
       perror("Can’t initialize the mutex\n");
       return -1;
     }
     if(pthread_cond_init(&cond_msg, NULL) != 0){ /*conditional variable*/
+      perror("Can’t initialize the condition variable\n");
+      return -1;
+    }
+    if(pthread_cond_init(&cond_list, NULL) != 0){ /*conditional variable*/
       perror("Can’t initialize the condition variable\n");
       return -1;
     }
@@ -243,164 +315,4 @@
       }
     }
     return 0;
-  }
-
-
-
-
-  /*Auxiliary method to fill the list with trivial element*/
-  void fillList(){
-       insertFirst(1,"Uno",10.0);
-       insertLast(2,"Dos",20.0);
-       insertLast(3,"Tres",30.0);
-       insertLast(4,"Cuatro",1.0);
-       insertLast(5,"Cinco",40.0);
-       insertLast(6,"Seis",56.0);
-       if(PRINTEA)displayForward();
-  }
-
-  /*It tests the init method of the server
-    It returns 0 in success and -1 on error*/
-  int testInit(){
-    fillList();//I fill the list with trivial elements
-    init();//I initialize the list so the list should be empty
-    if(isEmpty()){
-      printf("The list is empty (CORRECT)\n");
-      return 0;
-    }
-    else {
-      printf("ERROR testInit\n");
-      return-1;
-    }}
-
-  /*It test the contain method
-    It returns 0 in success and -1 on error*/
-  int testContain(){
-    fillList();//I fill the list with trivial elements
-    if(contain(1)){
-      printf("It contains 1 (CORRECT)\n");
-      return 0;
-    }
-    else {
-      printf("ERROR testContain\n");
-      return-1;
-    }
-  }
-
-  /*It test the set_value method
-  It returns 0 in success and -1 on error*/
-  int testSet_value(){
-    init();//I initialize the list so the list should be empty
-    if(set_value(1, "One", 1.0) < 0){//An error while setting a triplet
-      printf("ERROR testSet_value\n");
-      return -1;
-    }
-    if(contain(1)){//I check if the list contains the element I have just introduced
-      printf("It contains 1 (CORRECT)\n");
-      return 0;
-    }
-    else{
-      printf("ERROR testSet_value\n");
-      return-1;
-    }
-  }
-
-  /*It test the get_value method
-  It returns 0 in success and -1 on error*/
-  int testGet_value(){
-    init();//I initialize the list so the list should be empty
-    fillList();//I fill the list with trivial elements
-    char value1[256];//Auxiliary variables
-    float value2 = 2.0;
-    if(get_value(1, value1, &value2) < 0){
-      printf("ERROR testGet_value\n");
-      return-1;
-    }
-    else if(value2 == 10.0 && strcmp(value1,"Uno\n")){
-      printf("It contains the correct values %f and %s (CORRECT)\n", value2, value1);
-      return 0;
-    }
-    else{
-      printf("ERROR testGet_value\n");
-      return-1;
-    }
-  }
-
-  /*It test the get_value method
-  It returns 0 in success and -1 on error*/
-  int testModify_value(){
-    init();//I initialize the list so the list should be empty
-    fillList();//I fill the list with trivial elements
-    float value2 = 99.0;
-    if(modify_value(1, "New", &value2) < 0){//I modify the value of 1
-      printf("ERROR testModify_value\n");
-      return-1;
-    }
-    else{
-      value2 = 35.0;//I change the original value of the variable to make sure there is no problem with its pointer
-      float value3 = 0.0;//Auxiliary variable
-      char value1[256];
-      if(get_value(1, value1, &value3) < 0){
-        printf("ERROR testModify_value\n");
-        return-1;
-      }
-      else if(value3 == 99.0 && strcmp(value1,"New\n")){
-        printf("Values modified correctly (CORRECT)\n");
-        return 0;
-      }
-      else{
-        printf("ERROR testModify_value %s %f\n", value1, value3);
-        return-1;
-      }
-    }
-  }
-
-  /*It test the delete_key method
-  It returns 0 in success and -1 on error*/
-  int testDelete_key(){
-    init();//I initialize the list so the list should be empty
-    fillList();//I fill the list with trivial elements
-    int oldLength = length(), newLength;//Auxiliary variables
-    if(delete_key(1) < 0){//I delete the first element
-      printf("ERROR testDelete_key\n");
-      return-1;
-    }
-    newLength = length();
-    if( (oldLength -1) != newLength){//I check if the length is correct
-      printf("ERROR testDelete_key length\n");
-      return-1;
-    }
-    if(contain(1)){//I check if the list contains the element deleted
-      printf("ERROR testDelete_key contain\n");
-      return-1;
-    }
-    printf("Triplet deleted correctly (CORRECT)\n");
-    return 0;
-  }
-
-  /*It test the num_items method
-  It returns 0 in success and -1 on error*/
-  int testNum_items(){
-    init();//I initialize the list so the list should be empty
-    fillList();//I fill the list with trivial elements
-    if(num_items() != 6){
-      printf("ERROR testNum_items\n");
-      return-1;
-    }
-    printf("Correct number of items (CORRECT)\n");
-    return 0;
-  }
-
-  /*I run all the tests
-  It returns 0 in success and -1 if any test fails*/
-  int testAll(){
-    int check = 0;//Variable to know if any test fails
-    check =- testInit();
-    check =- testContain();
-    check =- testSet_value();
-    check =- testGet_value();
-    check =- testModify_value();
-    check =- testDelete_key();
-    check =- testNum_items();
-    return check;
   }

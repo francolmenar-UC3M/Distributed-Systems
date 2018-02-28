@@ -5,14 +5,18 @@
   #include <sys/types.h>
   #include <stdio.h>
 
-
   #define TRUE 1
   #define FALSE 0
 
   /* mutex and condition variables for the message copy */
   pthread_mutex_t mutex_msg;
-  int msg_not_copied = TRUE;        /* TRUE = 1 */
+  pthread_mutex_t mutex_list;
+
+  int msg_not_copied = TRUE;  /* TRUE = 1 */
+  int list_not_finished = FALSE; /* FALSE = 0*/
+
   pthread_cond_t cond_msg;
+  pthread_cond_t cond_list;
 
   /*It determines which is the action to be executed
   It returns 0 in success and -1 on error*/
@@ -24,6 +28,14 @@
   /*It process the request calling the desired method
   It returns 0 in success and -1 on error*/
   int request_process(struct request *msg);
+
+  /*It locks the muex associated to the list's operations
+    It checks the global variable too for avoiding false signals*/
+  static int lockMutex();
+
+  /*It unlocks the mutex associated to the list's operations
+    It changes the global variable too*/
+  static int unlockMutex();
 
   /*It allows the initialization of the system
   All the triplets stored in the system are destroyed

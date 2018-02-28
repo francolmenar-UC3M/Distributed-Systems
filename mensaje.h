@@ -2,8 +2,7 @@
 #define COMMON_H_
 #define MAXSIZE 256
 
-#define SERVER "/Revertsse1A"
-#define CLIENT "/Falscsó1A"
+#define SERVER "/Reverte"
 
 #define INIT "init"
 #define SET "set value"

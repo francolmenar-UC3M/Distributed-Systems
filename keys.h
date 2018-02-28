@@ -5,6 +5,17 @@
   #include <sys/types.h>
   #include <stdio.h>
 
+  #define TRUE 1
+  #define FALSE 0
+  #define TOP_EXP_CLIENT 5
+  #define NUMBER_OF_CLIENTS 1
+
+
+  pthread_mutex_t mutex_id; /*mutex*/
+  static int id_not_copied = FALSE;  /* TRUE = 1 */
+  pthread_cond_t cond_id;
+
+  static int id = 0; /*queue identifier*/
   mqd_t q_server; /* server message queue */
   mqd_t q_client; /* client message queue */
 
