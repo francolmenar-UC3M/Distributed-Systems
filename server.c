@@ -8,42 +8,36 @@
   int chooseAction(struct request *msg_local){
     /*I check all the possible calls from the user*/
     if(strcmp(msg_local -> action_name, INIT) == 0){
-      printf("%s\n", INIT);
       if(init() < 0){
         perror("Error in init\n");
         return -1;
       }
     }
     else if (strcmp(msg_local -> action_name,SET) == 0){
-      printf("%s\n",SET);
       if(set_value(msg_local -> key, msg_local -> value1, msg_local -> value2) < 0){
         perror("Error in set_value\n");
         return -1;
       }
     }
     else if (strcmp(msg_local -> action_name,GET) == 0){
-      printf("%s\n", GET);
       if(get_value(msg_local -> key, msg_local -> value1,  &(msg_local -> value2)) < 0){
         perror("Error in get_value\n");
         return -1;
       }
     }
     else if (strcmp(msg_local -> action_name,MODIFY) == 0){
-      printf("%s\n", MODIFY);
       if(modify_value(msg_local -> key, msg_local -> value1, &(msg_local -> value2)) < 0){
         perror("Error in modify_value\n");
         return -1;
       }
     }
     else if (strcmp(msg_local -> action_name,DELETE) == 0){
-      printf("%s\n", DELETE);
       if(delete_key(msg_local -> key) < 0){
         perror("Error in delete_key\n");
         return -1;
       }
     }
     else if (strcmp(msg_local -> action_name,NUM) == 0){
-      printf("%s\n", NUM);
       if((msg_local -> key  = num_items()) < 0){
         perror("Error in num_items\n");
         return -1;
@@ -60,6 +54,7 @@
   /*It sends the response to the client*/
   int send(int error, struct request *msg_local){
     mqd_t q_client;/* client queue */
+
     /* return result to client by sending it to queue */
     q_client = mq_open(msg_local -> q_name, O_WRONLY);
     if (q_client == -1) {//check for errors while opening the queue
@@ -184,7 +179,6 @@
       return -1;//There is already a triplet with the same key
     }
     else if(length() > 0){
-      printf("last\n");
       insertLast(key, value1, value2);//If the list is not empty I store it at the end
     }
     else {
@@ -247,11 +241,9 @@
   /*It stores the number of elements stored
   It returns 0 in success and -1 on error*/
   static int num_items(){
-    printf("IN\n");
     if(lockMutex() < 0) return -1; /*I lock the mutex*/
     int aux = length();
     if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
-    printf("Out\n");
     return aux;
   }
 

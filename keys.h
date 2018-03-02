@@ -4,24 +4,24 @@
   #include <string.h>
   #include <sys/types.h>
   #include <stdio.h>
+  #include <stdlib.h>
 
   #define TRUE 1
   #define FALSE 0
   #define TOP_EXP_CLIENT 5
   #define NUMBER_OF_CLIENTS 1
+  #define NAME_SIZE 6 /*length of the client of the name*/
 
-
-  pthread_mutex_t mutex_id; /*mutex*/
-  static int id_not_copied = FALSE;  /* TRUE = 1 */
-  pthread_cond_t cond_id;
-
-  static int id = 0; /*queue identifier*/
+  char client [NAME_SIZE]; /*the name of the client queue*/
   mqd_t q_server; /* server message queue */
   mqd_t q_client; /* client message queue */
 
   struct request req; /*request to the server*/
   struct response res; /*respond from the server*/
   struct mq_attr attr; /*queue atributes*/
+
+  /*It creates a random name for the client queue*/
+  static int rand_string();
 
   /*It configures the queues in order to being able to use them*/
   static int set_up();

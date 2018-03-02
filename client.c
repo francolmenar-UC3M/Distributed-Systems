@@ -1,11 +1,12 @@
 #include "mensaje.h"
 #include "keys.c"
 
-#define NCLIENTS 2
+#define NCLIENTS 1
 
 static int normalExe(){
   printf("I set 1, 2 and 3\n");
-  set_value(1, "Uno", 1.0);/*
+  init();
+  set_value(1, "Uno", 1.0);
   set_value(2, "Dos", 2.0);
   set_value(3, "Tres", 3.0);
   char aux [MAXSIZE];
@@ -22,7 +23,7 @@ static int normalExe(){
   printf("I delete 1\n");
   delete_key(1);
   int n = num_items();
-  printf("Number of elements: %i\n", n);*/
+  printf("Number of elements: %i\n", n);
   return 0;
 }
 

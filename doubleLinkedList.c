@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-/*https://www.tutorialspoint.com/data_structures_algorithms/doubly_linked_list_program_in_c.htm*/
 
 /*Each node is a triplet*/
 struct node {

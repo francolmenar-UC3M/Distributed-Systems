@@ -1,10 +1,7 @@
 #include "mensaje.h"
 #include "keys.h"
-#include <stdlib.h>
-#define NAME_SIZE 11
 
-char client [NAME_SIZE];
-
+/*It creates a random name for the client queue*/
 static int rand_string(){
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     int size = NAME_SIZE; /*I copy the size of the name to an auxiliary variable*/
@@ -20,46 +17,10 @@ static int rand_string(){
     return 0;
 }
 
-/*It locks the muex associated to the list's operations
-  It checks the global variable too for avoiding false signals*/
-static int lockMutex(){
-  if (pthread_mutex_lock(&mutex_id) != 0) {
-          perror("Can’t lock the mutex");
-          return -1;
-  }
-  while (id_not_copied) /*waiting while the list is being used*/
-          pthread_cond_wait(&cond_id, &mutex_id);
-  id_not_copied = TRUE; /* TRUE = 1 */
-  return 0;
-}
-
-/*It unlocks the mutex associated to the list's operations
-  It changes the global variable too*/
-static int unlockMutex(){
-  id_not_copied = FALSE; /* FALSE = 0 */
-  if (pthread_cond_signal(&cond_id) != 0) { /*send the signal*/
-    perror("Can’t lock the mutex");
-    return -1;
-  }
-  if (pthread_mutex_unlock(&mutex_id) != 0) { /*unlock the mutex*/
-    perror("Can’t lock the mutex\n");
-    return -1;
-  }
-  return 0;
-}
-
 /*It configures the queues in order to being able to use them*/
 static int set_up(){
     attr.mq_maxmsg = 20; /*Atributes of the queue of the client side*/
     attr.mq_msgsize = sizeof(struct response);
-    /*lockMutex();
-    char aux_name [TOP_EXP_CLIENT];
-    strcpy(req.q_name,  CLIENT); /copy the base name/
-    snprintf(aux_name, TOP_EXP_CLIENT, "%d", id);
-    strcat(req.q_name, aux_name);
-    id++;
-    unlockMutex();
-  //printf("Name %s\n", req.q_name);*/
     rand_string();
     q_client = mq_open(client,  O_CREAT|O_RDONLY,  0700,  &attr); /*client queue*/
     if(q_client == -1){//check for errors while opening the queues
