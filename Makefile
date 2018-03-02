@@ -1,4 +1,4 @@
-all: libkeys.a server client testServerList testServerList
+all: libkeys.a server client testServerList
 
 libkeys.a: keys.o
 	ar rcs libkeys.a keys.o
