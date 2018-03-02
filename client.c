@@ -1,11 +1,11 @@
 #include "mensaje.h"
 #include "keys.c"
-#define CLIENT "/Falcó"
 
+#define NCLIENTS 2
 
 static int normalExe(){
   printf("I set 1, 2 and 3\n");
-  set_value(1, "Uno", 1.0);
+  set_value(1, "Uno", 1.0);/*
   set_value(2, "Dos", 2.0);
   set_value(3, "Tres", 3.0);
   char aux [MAXSIZE];
@@ -22,7 +22,7 @@ static int normalExe(){
   printf("I delete 1\n");
   delete_key(1);
   int n = num_items();
-  printf("Number of elements: %i\n", n);
+  printf("Number of elements: %i\n", n);*/
   return 0;
 }
 
@@ -37,9 +37,11 @@ int main(void) {
     perror("Can’t set the thread as detachable\n");
     return -1;
   }
-  if(pthread_create(&clients, &t_attr,  (void *) (*normalExe), NULL) != 0){ /*I create a thread*/
-      perror("Can’t create the thread\n");
-      return -1;
+  for(int i = 0; i < NCLIENTS; i++){
+    if(pthread_create(&clients, &t_attr,  (void *) (*normalExe), NULL) != 0){ /*I create a thread*/
+        perror("Can’t create the thread\n");
+        return -1;
+    }
   }
   while(1){
 

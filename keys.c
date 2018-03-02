@@ -1,5 +1,24 @@
 #include "mensaje.h"
 #include "keys.h"
+#include <stdlib.h>
+#define NAME_SIZE 11
+
+char client [NAME_SIZE];
+
+static int rand_string(){
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    int size = NAME_SIZE; /*I copy the size of the name to an auxiliary variable*/
+    if (size) {
+        --size;
+        for (size_t n = 0; n < size; n++) {
+            int key = rand() % (int) (sizeof charset - 1);
+            client[n] = charset[key];
+        }
+        client[size] = '\0';
+        client[0] = '/';
+    }
+    return 0;
+}
 
 /*It locks the muex associated to the list's operations
   It checks the global variable too for avoiding false signals*/
@@ -29,7 +48,6 @@ static int unlockMutex(){
   return 0;
 }
 
-
 /*It configures the queues in order to being able to use them*/
 static int set_up(){
     attr.mq_maxmsg = 20; /*Atributes of the queue of the client side*/
@@ -42,7 +60,8 @@ static int set_up(){
     id++;
     unlockMutex();
   //printf("Name %s\n", req.q_name);*/
-    q_client = mq_open(CLIENT,  O_CREAT|O_RDONLY,  0700,  &attr); /*client queue*/
+    rand_string();
+    q_client = mq_open(client,  O_CREAT|O_RDONLY,  0700,  &attr); /*client queue*/
     if(q_client == -1){//check for errors while opening the queues
       perror("Can’t open client queue ");
       return -1;
@@ -77,7 +96,7 @@ static int send(){
     perror("Can’t close the client queue\n");
     return -1;
   }
-  if(mq_unlink(CLIENT) < 0){
+  if(mq_unlink(client) < 0){
     perror("Can’t unlink the queue\n");
     return -1;
   }
@@ -93,7 +112,7 @@ static int init (){
     return -1;
   }
   strcpy(req.action_name,  INIT);
-  strcpy(req.q_name,  CLIENT);
+  strcpy(req.q_name,  client);
   if(send()  == -1){
     perror("Can’t send the request\n");
     return -1;
@@ -116,7 +135,7 @@ static int set_value(int key, char *value1, float value2){
   req.key = key; /*I copy the variables to the request struc*/
   strcpy(req.value1,  value1);
   req.value2 = value2;
-  strcpy(req.q_name,  CLIENT);
+  strcpy(req.q_name,  client);
   strcpy(req.action_name,  SET);
   if(send()  == -1){
     perror("Can’t send the request\n");
@@ -141,7 +160,7 @@ static int get_value(int key, char *value1, float *value2){
   strcpy(req.value1,  value1);
   req.value2 = *value2;
   strcpy(req.action_name,  GET);
-  strcpy(req.q_name,  CLIENT);
+  strcpy(req.q_name,  client);
   if(send()  == -1){
     perror("Can’t send the request\n");
     return -1;
@@ -168,7 +187,7 @@ static int modify_value(int key, char *value1, float *value2){
   strcpy(req.value1,  value1);
   req.value2 = *value2;
   strcpy(req.action_name,  MODIFY);
-  strcpy(req.q_name,  CLIENT);
+  strcpy(req.q_name,  client);
   if(send()  == -1){
     perror("Can’t send the request\n");
     return -1;
@@ -189,7 +208,7 @@ static int delete_key(int key){
   }
   req.key = key; /*I copy the variables to the request struc*/
   strcpy(req.action_name,  DELETE);
-  strcpy(req.q_name,  CLIENT);
+  strcpy(req.q_name,  client);
   if(send()  == -1){
     perror("Can’t send the request\n");
     return -1;
@@ -208,6 +227,7 @@ static int num_items(){
     perror("Can’t set up the queues\n");
     return -1;
   }
+  strcpy(req.q_name,  client);
   strcpy(req.action_name,  NUM);
   if(send()  == -1){
     perror("Can’t send the request\n");

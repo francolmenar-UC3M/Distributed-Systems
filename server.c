@@ -247,9 +247,11 @@
   /*It stores the number of elements stored
   It returns 0 in success and -1 on error*/
   static int num_items(){
+    printf("IN\n");
     if(lockMutex() < 0) return -1; /*I lock the mutex*/
     int aux = length();
     if(unlockMutex() < 0) return -1; /*I unlock the mutex*/
+    printf("Out\n");
     return aux;
   }
 
