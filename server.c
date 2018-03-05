@@ -3,6 +3,7 @@
 #include<sys/socket.h>
 #include<arpa/inet.h> //inet_addr
 #include<unistd.h>    //write
+#include "read_line.h"
 #include <stdlib.h>
 #define MAX_LINE	256
 
@@ -59,7 +60,7 @@ int main(int argc , char *argv[]){
     }
     res = (char *) malloc(sizeof(char) + sizeof(char) * n); /*allocate the memory to the input string*/
     res[n] = '\0';
-    n = recv(client_sock, (char *) res, sizeof(char) * n, 0); /*recieve the string*/
+    n = recv_msg(client_sock, (char *) res, n); /*recieve the string*/
     if(n < 0){ /*check for errors receiving*/
       printf("Error receiving\n");
       return -1;
@@ -69,7 +70,7 @@ int main(int argc , char *argv[]){
       res[i] = res[i] + 1;
     }
     printf("Message sent %s\n",res );
-    if(send( client_sock, (char *) res, sizeof(char) * n, 0) < 0){ /*send result*/
+    if(send_msg( client_sock, (char *) res, sizeof(char) * n) < 0){ /*send result*/
       perror("error sending the request");
       return -1;
     }

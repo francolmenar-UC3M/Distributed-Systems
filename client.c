@@ -69,13 +69,17 @@ int main(int argc , char *argv[]){ /*argv[1] is the server*/
       return 1;
     }
 
-    if( send(sock , (char *) buffer, sizeof(char) * n, 0) < 0){ /*send the string read*/
-      printf("Send failed\n");
-      return 1;
-    }
-    res = (char *) malloc(sizeof(char) + sizeof(char) * n); /*allocate the memory to the response string*/
-    res[n] = '\0';
-    if( recv(sock ,(char *) res , sizeof(char) * n, 0) < 0){ /*Receive a reply from the server*/
+    // if( send(sock , (char *) buffer, sizeof(char) * n, 0) < 0){ /*send the string read*/
+    //   printf("Send failed\n");
+    //   return 1;
+    // }
+    // res = (char *) malloc(sizeof(char) + sizeof(char) * n); /*allocate the memory to the response string*/
+    // res[n] = '\0';
+    if( send_msg(sock , (char *) buffer, n )< 0){ /*send the string read*/
+        printf("Send failed\n");
+        return 1;
+      }
+    if( recv_msg(sock ,(char *) res , n) < 0){ /*Receive a reply from the server*/
       printf("recv failed\n");
       return 1;
     }
