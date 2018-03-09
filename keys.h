@@ -9,27 +9,32 @@
   #define TRUE 1
   #define FALSE 0
   #define TOP_EXP_CLIENT 5
-  #define NUMBER_OF_CLIENTS 1
   #define NAME_SIZE 6 /*length of the client of the name*/
 
-  char client [NAME_SIZE]; /*the name of the client queue*/
-  mqd_t q_server; /* server message queue */
-  mqd_t q_client; /* client message queue */
+  mqd_t q_server = -1; /* server message queue */
 
   struct request req; /*request to the server*/
   struct response res; /*respond from the server*/
   struct mq_attr attr; /*queue atributes*/
 
-  /*It creates a random name for the client queue*/
-  static int rand_string();
+  /*It closes the server queue*/
+  static int closeServer();
 
-  /*It configures the queues in order to being able to use them*/
-  static int set_up();
+  /*It closes and unlink the client queue*/
+  static int closeClient(int q_descriptor, char * client);
+
+  /*It creates a random name for the client queue*/
+  static int rand_string(char * client);
+
+  /*It configures the queues in order to being able to use them
+    It creates the client queue identifiers*/
+  static int set_up(char * client);
 
   /*It sends the request to the server
+    Recieve as an input the client queue descriptor
     It waits for its response
     It stores the response*/
-  static int send();
+  static int send(int q_descriptor, char * client);
 
   /*It allows the initialization of the system
   All the triplets stored in the system are destroyed
