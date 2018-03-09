@@ -254,7 +254,7 @@
     pthread_attr_t t_attr;     /*thread atributes*/
     pthread_t thid;
 
-    q_attr.mq_maxmsg = 20;      /*maximum number of messages in queue*/
+    q_attr.mq_maxmsg = 10;      /*maximum number of messages in queue*/
     q_attr.mq_msgsize = sizeof(struct request); /*maximum message size*/
 
     q_server = mq_open(SERVER,  O_CREAT|O_RDONLY,  0700,  &q_attr); /*open the queue*/
