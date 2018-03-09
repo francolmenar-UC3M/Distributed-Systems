@@ -43,7 +43,7 @@ static int rand_string(char * client){
   It creates the client queue identifiers*/
 static int set_up(char * client){
     int q_descriptor; /*client queue descriptor*/
-    attr.mq_maxmsg = 20; /*Atributes of the queue of the client side*/
+    attr.mq_maxmsg = 10; /*Atributes of the queue of the client side*/
     attr.mq_msgsize = sizeof(struct response);
     q_descriptor = mq_open(client,  O_CREAT|O_RDONLY,  0700,  &attr); /*client queue*/
     if(q_descriptor == -1){ /*check for errors while opening the queues*/
