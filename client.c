@@ -1,7 +1,7 @@
 #include "mensaje.h"
 #include "keys.c"
 
-#define NCLIENTS 2
+#define NCLIENTS 2 /*number f threads to be created*/
 
 /*It simulates a common execution of a client*/
 static int normalExe(){
@@ -27,7 +27,6 @@ static int normalExe(){
     perror("Error while set (CLIENT)");
     return -1;
   }
-
 
   char aux [MAXSIZE]; /*getting a value of the server*/
   float aux2 = 40.0;
@@ -72,6 +71,7 @@ static int normalExe(){
   printf("Number of elements: %i\n", n);
   return 0;
 }
+
 
 int main(void) {
   pthread_attr_t t_attr;     /*thread atributes*/

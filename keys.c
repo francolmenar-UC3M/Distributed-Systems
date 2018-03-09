@@ -1,6 +1,28 @@
 #include "mensaje.h"
 #include "keys.h"
 
+/*It closes the server queue*/
+static int closeServer(){
+  if(mq_close(q_server) < 0){ /*close*/
+    perror("Can’t close the server queue\n");
+    return -1;
+  }
+  return 0;
+}
+
+/*It closes and unlink the client queue*/
+static int closeClient(int q_descriptor, char * client){
+  if(mq_close(q_descriptor) < 0){ /*close*/
+    perror("Can’t close the client queue\n");
+    return -1;
+  }
+  if(mq_unlink(client) < 0){ /*unlink*/
+    perror("Can’t unlink the queue\n");
+    return -1;
+  }
+  return 0;
+}
+
 /*It creates a random name for the client queue*/
 static int rand_string(char * client){
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -18,7 +40,7 @@ static int rand_string(char * client){
 }
 
 /*It configures the queues in order to being able to use them
-  It returns the client queue identifiers*/
+  It creates the client queue identifiers*/
 static int set_up(char * client){
     int q_descriptor; /*client queue descriptor*/
     attr.mq_maxmsg = 20; /*Atributes of the queue of the client side*/
@@ -28,9 +50,13 @@ static int set_up(char * client){
       perror("Can’t open client queue ");
       return -1;
     }
-
-    if (q_server == -1)
+    if (q_server == -1){ /*check to not reopen the server queue*/
+      if(atexit((void *) (* closeServer)) != 0){ /*set the exit function*/
+        perror("Can’t set the exit function");
+        return -1;
+      }
       q_server = mq_open(SERVER,  O_WRONLY); /*server queue*/
+    }
     if(q_server == -1){
       perror("Can’t open client queue ");
       return -1;
@@ -53,19 +79,7 @@ static int send(int q_descriptor, char * client){
     perror("Can’t receive server request\n");
     return -1;
   }
-  if(mq_close(q_server) < 0){
-    perror("Can’t close the server queue\n");
-    return -1;
-  }
-  if(mq_close(q_descriptor) < 0){
-    perror("Can’t close the client queue\n");
-    return -1;
-  }
-  if(mq_unlink(client) < 0){
-    perror("Can’t unlink the queue\n");
-    return -1;
-  }
-  return 0;
+  return closeClient(q_descriptor, client); /*close the client queue*/
 }
 
 /*It allows the initialization of the system
@@ -83,6 +97,7 @@ static int init (){
   strcpy(req.q_name,  client); /*copy the client queue's name*/
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){ /*I check for errors*/
@@ -110,6 +125,7 @@ static int set_value(int key, char *value1, float value2){
   strcpy(req.action_name,  SET); /*copy the function name*/
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){/*I check for errors*/
@@ -137,6 +153,7 @@ static int get_value(int key, char *value1, float *value2){
   strcpy(req.q_name,  client);
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){/*I check for errors*/
@@ -167,6 +184,7 @@ static int modify_value(int key, char *value1, float *value2){
   strcpy(req.q_name,  client);
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){/*I check for errors*/
@@ -191,6 +209,7 @@ static int delete_key(int key){
   strcpy(req.q_name,  client);
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){/*I check for errors*/
@@ -214,6 +233,7 @@ static int num_items(){
   strcpy(req.action_name,  NUM);
   if(send(q_descriptor, client)  == -1){
     perror("Can’t send the request\n");
+    closeClient(q_descriptor, client); /*close the client queue*/
     return -1;
   }
   if(res.error < 0){ /*I check for errors*/
