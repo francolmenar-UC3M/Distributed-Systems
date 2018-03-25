@@ -237,10 +237,10 @@ class client {
 		}
         //*********** Variables to use ************/
 
-        Socket socket;
+        Socket socket = null;
 		String serverName, stringToSend, response;
 		int portNumber;
-        OutputStream out;
+        OutputStream out = null;
         ObjectOutput outputObject;
         BufferedReader input;
 
@@ -255,13 +255,11 @@ class client {
             System.out.println("Socket exception");
             e.printStackTrace();
             return; // no se si hay que salir si peta esto REVISARLO
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("IO exception");
             e.printStackTrace();
             return; // no se si hay que salir si peta esto REVISARLO
         }
-
         try { // set the input and the output of the socket
             out = socket.getOutputStream(); // output stream
             outputObject = new ObjectOutputStream(out); // objectOutput
