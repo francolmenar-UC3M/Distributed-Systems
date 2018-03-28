@@ -13,7 +13,7 @@
  * @return the int read
  */
 int receiveInt(int sock) {
-  char intBufferCoupReq[1024]; /* buffer */
+  char intBufferCoupReq[MAX_LINE]; /* buffer */
   memset(intBufferCoupReq, '\0', sizeof(intBufferCoupReq)); /* end of string char */
 
   int k = 0; /* no se por qué se pone esto */
@@ -44,9 +44,16 @@ int receiveString(int sock, char* input) {
   return 0;
 }
 
+int sendByte(int sock, char *input) {
+  if(send_msg( sock, (char *) input, sizeof(char)) < 0){ /*send result*/
+    perror("error sending the request");
+    return -1;
+  }
+  return 0;
+}
+
 int main(int argc , char *argv[]){
-  int socket_desc , client_sock , c, n, length, confirmation;
-	char *res;
+  int socket_desc , client_sock , c;
   struct sockaddr_in server , client;
 
   socket_desc = socket(AF_INET , SOCK_STREAM , 0); /*Create socket*/
@@ -86,6 +93,8 @@ int main(int argc , char *argv[]){
       return 1;
     }
     printf("length: %i\n", length);
+    close(client_sock); /*close client socket*/
+
 
     client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
     char input[1024];
@@ -94,8 +103,18 @@ int main(int argc , char *argv[]){
       return 1;
     }
     printf("String: %s\n", input);
-
     close(client_sock); /*close client socket*/
+
+    char byte[1];
+    byte[0] = 0x00;
+    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
+    if( sendByte(client_sock, byte) < 0){ /* send byte */
+      perror("send byte failed");
+      return 1;
+    }
+    close(client_sock); /*close client socket */
+
+
   }
   close(socket_desc); /*close server socket*/
   return 0;
