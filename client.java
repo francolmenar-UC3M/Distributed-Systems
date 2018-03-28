@@ -26,8 +26,78 @@ class client {
     private static String _server   = null;
     private static int _port = -1;
 
+    private static final String REGISTER = "REGISTER";
+
 
     /********************* METHODS ********************/
+
+    /**
+     * Receive a Byte from the server
+     *
+     * @param serverName
+     * @param portNumber
+     * @return the Byte received from the server
+     */
+    private static Byte receiveByte(String serverName, int portNumber) {
+        try {
+            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
+            DataInputStream input  = new DataInputStream(socket.getInputStream()); // buffer reader
+
+            Byte response;
+            if ( (response = input.readByte()) < 0){ // return the String received
+                System.out.println("Error reading byte");
+                return null;
+            }
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Send an string to the server by the given port
+     *
+     * @param msg: String to be sent
+     */
+    private static void sendString(Socket socket, String msg) {
+        try { // handle socket errors
+            DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
+
+            outputObject.write(msg.getBytes());
+
+            outputObject.close(); // close the outputObject
+        }  catch (IOException e) {
+            System.out.println("IO exception");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Send an integer to the server
+     *
+     * @param serverName
+     * @param portNumber
+     * @param msg: int to send to the server
+     */
+    private static void sendInt(String serverName, int portNumber, int msg) {
+        try { // handle socket errors
+            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
+            DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
+
+            outputObject.writeInt(msg); // write the message in the socket
+
+            socket.close(); // close the socket
+            outputObject.close(); // close the outputObject
+
+        } catch (SocketException e) {
+            System.out.println("Socket exception");
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("IO exception");
+            e.printStackTrace();
+        }
+    }
 
     /**
      * @param user - User name to register in the system
@@ -38,6 +108,18 @@ class client {
      */
     static RC register(String user)
     {
+        try {
+            Socket socket = new Socket(_server, _port); // socket to connect to the server
+            sendString(socket, REGISTER);
+
+            //sendString(socket, user);
+            socket.close(); // close the socket
+            System.out.println("OK");
+            return  RC.OK;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // Write your code here
         return RC.ERROR;
     }
@@ -238,95 +320,25 @@ class client {
 			return;
 		}
         /* ********** Variables to use *********** */
-        //String stringToSend = "TEST"; // String to send to the server
-        String serverName = argv[1]; // name of the server
-        int portNumber = Integer.parseInt(argv[3]); // port number
+//        String stringToSend = "TEST"; // String to send to the server
+//        String serverName = argv[1]; // name of the server
+//        int portNumber = Integer.parseInt(argv[3]); // port number
+//
+//        String msg = "SEND"; /* message to send to the server */
+//
+//        sendInt(serverName, portNumber, msg.length()); /* send integer */
+//
+//        sendString(serverName, portNumber, msg); /* send a string */
+//
+//        Byte input = receiveByte(serverName, portNumber); /* receive a String from the server */
+//
+//        if(input == 0)  System.out.println("0");
+//        else if(input == 1)  System.out.println("1");
+//        if(input == 2)  System.out.println("2");
 
-        String msg = "SEND"; /* message to send to the server */
-
-        sendInt(serverName, portNumber, msg.length()); /* send integer */
-
-        sendString(serverName, portNumber, msg); /* send a string */
-
-        Byte input = receiveByte(serverName, portNumber); /* receive a String from the server */
-
-        System.out.println("Input Byte: " + input);
-
+        _server = argv[1]; // name of the server
+        _port = Integer.parseInt(argv[3]); // port number
         shell();
     }
 
-    /**
-     * Receive a Byte from the server
-     *
-     * @param serverName
-     * @param portNumber
-     * @return the Byte received from the server
-     */
-    private static Byte receiveByte(String serverName, int portNumber) {
-        try {
-            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
-            DataInputStream input  = new DataInputStream(socket.getInputStream()); // buffer reader
-
-            Byte response;
-            if ( (response = input.readByte()) < 0){ // return the String received
-                System.out.println("Error reading byte");
-                return null;
-            }
-            return response;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Send an string to the server by the given port
-     *
-     * @param serverName
-     * @param portNumber
-     * @param msg: String to be sent
-     */
-    private static void sendString(String serverName, int portNumber, String msg) {
-    try { // handle socket errors
-        Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
-        DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
-
-        outputObject.write(msg.getBytes());
-
-        socket.close(); // close the socket
-        outputObject.close(); // close the outputObject
-    } catch (SocketException e) {
-        System.out.println("Socket exception");
-        e.printStackTrace();
-    } catch (IOException e) {
-        System.out.println("IO exception");
-        e.printStackTrace();
-    }
-    }
-
-    /**
-     * Send an integer to the server
-     *
-     * @param serverName
-     * @param portNumber
-     * @param msg: int to send to the server
-     */
-    private static void sendInt(String serverName, int portNumber, int msg) {
-        try { // handle socket errors
-            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
-            DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
-
-            outputObject.writeInt(msg); // write the message in the socket
-
-            socket.close(); // close the socket
-            outputObject.close(); // close the outputObject
-
-        } catch (SocketException e) {
-            System.out.println("Socket exception");
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.out.println("IO exception");
-            e.printStackTrace();
-        }
-    }
 }

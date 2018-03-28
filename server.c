@@ -34,11 +34,12 @@ int receiveInt(int sock) {
 int receiveString(int sock, char* input) {
   memset(input, '\0', sizeof(input)); /* end of string char */
 
+
   int k = 0; /* no se por qué se pone esto */
   while ( 1 ) { /* reading from the socket */
     int nbytes = recv(sock, &input[k], 1, 0);
     if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
-    if ( nbytes ==  0 ) { printf("recv finish\n");break; }
+    if ( nbytes ==  0 ) { break; }
     k++;
   }
   return 0;
@@ -87,32 +88,39 @@ int main(int argc , char *argv[]){
     }
 
     /* Receive an int */
-    int length;
-    if( (length = receiveInt(client_sock) ) < 0){
-      perror("receive int failed");
-      return 1;
-    }
-    printf("length: %i\n", length);
-    close(client_sock); /*close client socket*/
+//    int length;
+//    if( (length = receiveInt(client_sock) ) < 0){
+//      perror("receive int failed");
+//      return 1;
+//    }
+//    printf("length: %i\n", length);
+//    close(client_sock); /*close client socket*/
 
 
     client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
-    char input[1024];
+    char input[MAX_LINE];
     if( receiveString(client_sock, input) < 0){
       perror("receive string failed");
       return 1;
     }
     printf("String: %s\n", input);
-    close(client_sock); /*close client socket*/
 
-    char byte[1];
-    byte[0] = 0x00;
-    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
-    if( sendByte(client_sock, byte) < 0){ /* send byte */
-      perror("send byte failed");
+    if( receiveString(client_sock, input) < 0){
+      perror("receive string failed");
       return 1;
     }
-    close(client_sock); /*close client socket */
+    printf("User: %s\n", input);
+
+    close(client_sock); /*close client socket*/
+
+//    char byte[1];
+//    byte[0] = 0x00;
+//    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
+//    if( sendByte(client_sock, byte) < 0){ /* send byte */
+//      perror("send byte failed");
+//      return 1;
+//    }
+//    close(client_sock); /*close client socket */
 
 
   }
