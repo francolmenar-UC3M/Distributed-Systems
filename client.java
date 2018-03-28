@@ -248,12 +248,44 @@ class client {
 
         sendString(serverName, portNumber, msg); /* send a string */
 
-        
+        Byte input = receiveByte(serverName, portNumber); /* receive a String from the server */
+
+        System.out.println("Input Byte: " + input);
 
         shell();
-
     }
 
+    /**
+     * Receive a Byte from the server
+     *
+     * @param serverName
+     * @param portNumber
+     * @return the Byte received from the server
+     */
+    private static Byte receiveByte(String serverName, int portNumber) {
+        try {
+            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
+            DataInputStream input  = new DataInputStream(socket.getInputStream()); // buffer reader
+
+            Byte response;
+            if ( (response = input.readByte()) < 0){ // return the String received
+                System.out.println("Error reading byte");
+                return null;
+            }
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Send an string to the server by the given port
+     *
+     * @param serverName
+     * @param portNumber
+     * @param msg: String to be sent
+     */
     private static void sendString(String serverName, int portNumber, String msg) {
     try { // handle socket errors
         Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
