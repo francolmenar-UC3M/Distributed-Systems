@@ -6,6 +6,8 @@ import java.util.logging.SocketHandler;
 
 import gnu.getopt.Getopt;
 
+import static java.lang.Thread.sleep;
+
 class client {
 
     /********************* TYPES **********************/
@@ -235,61 +237,64 @@ class client {
 			usage();
 			return;
 		}
-        //*********** Variables to use ************/
+        /* ********** Variables to use *********** */
+        //String stringToSend = "TEST"; // String to send to the server
+        String serverName = argv[1]; // name of the server
+        int portNumber = Integer.parseInt(argv[3]); // port number
 
-        Socket socket = null;
-		String serverName, stringToSend, response;
-		int portNumber;
-        OutputStream out = null;
-        ObjectOutput outputObject;
-        BufferedReader input;
+        String msg = "SEND"; /* message to send to the server */
 
-		serverName = argv[1]; // name of the server
-        portNumber = Integer.parseInt(argv[3]); // port number
+        sendInt(serverName, portNumber, msg.length()); /* send integer */
 
-        System.out.println("Server name: " +  serverName + "\nPort number: " + portNumber);
+        sendString(serverName, portNumber, msg); /* send a string */
 
+        
+
+        shell();
+
+    }
+
+    private static void sendString(String serverName, int portNumber, String msg) {
+    try { // handle socket errors
+        Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
+        DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
+
+        outputObject.write(msg.getBytes());
+
+        socket.close(); // close the socket
+        outputObject.close(); // close the outputObject
+    } catch (SocketException e) {
+        System.out.println("Socket exception");
+        e.printStackTrace();
+    } catch (IOException e) {
+        System.out.println("IO exception");
+        e.printStackTrace();
+    }
+    }
+
+    /**
+     * Send an integer to the server
+     *
+     * @param serverName
+     * @param portNumber
+     * @param msg: int to send to the server
+     */
+    private static void sendInt(String serverName, int portNumber, int msg) {
         try { // handle socket errors
-            socket = new Socket(serverName, portNumber); // socket to connect to the server
+            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
+            DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
+
+            outputObject.writeInt(msg); // write the message in the socket
+
+            socket.close(); // close the socket
+            outputObject.close(); // close the outputObject
+
         } catch (SocketException e) {
             System.out.println("Socket exception");
             e.printStackTrace();
-            return; // no se si hay que salir si peta esto REVISARLO
         } catch (IOException e) {
             System.out.println("IO exception");
             e.printStackTrace();
-            return; // no se si hay que salir si peta esto REVISARLO
         }
-        try { // set the input and the output of the socket
-            out = socket.getOutputStream(); // output stream
-            outputObject = new ObjectOutputStream(out); // objectOutput
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream())); // buffer reader
-        } catch (IOException e) {
-            System.out.println("IO exception");
-            e.printStackTrace();
-            return; // no se si hay que salir si peta esto REVISARLO
-        }
-        stringToSend = "Test"; // test string
-        try {
-            outputObject.writeObject(stringToSend); // write the message in the socket
-            outputObject.flush(); // send the request
-
-            response = input.readLine();
-
-            System.out.println("Response of the server: " + response);
-
-            socket.close(); // close the socket
-            out.close(); // close the outputStream
-            outputObject.close(); // close the outputObject
-            input.close(); //close the bufferedReader
-
-        } catch (IOException e) {
-            System.out.println("IO exception");
-            e.printStackTrace();
-            return; // no se si hay que salir si peta esto REVISARLO
-        }
-
-		shell();
-
     }
 }
