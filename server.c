@@ -7,6 +7,42 @@
 #include <stdlib.h>
 #define MAX_LINE	256
 
+/* Read an int from the given socket
+ *
+ * @param sock: the socket we are using to transfer data
+ * @return the int read
+ */
+int receiveInt(int sock) {
+  char intBufferCoupReq[1024]; /* buffer */
+  memset(intBufferCoupReq, '\0', sizeof(intBufferCoupReq)); /* end of string char */
+
+  int k = 0; /* no se por qué se pone esto */
+  while ( 1 ) { /* reading from the socket */
+    int nbytes = recv(sock, &intBufferCoupReq[k], 1, 0);
+    if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
+    if ( nbytes ==  0 ) { break; }
+    k++;
+  }
+  return ntohl(*((int *) &intBufferCoupReq));
+}
+
+/* Read a string from the given socket
+ *
+ * @param sock: the socket we are using to transfer data
+ * @return -1 if error
+ */
+int receiveString(int sock, char* input) {
+  memset(input, '\0', sizeof(input)); /* end of string char */
+
+  int k = 0; /* no se por qué se pone esto */
+  while ( 1 ) { /* reading from the socket */
+    int nbytes = recv(sock, &input[k], 1, 0);
+    if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
+    if ( nbytes ==  0 ) { printf("recv finish\n");break; }
+    k++;
+  }
+  return 0;
+}
 
 int main(int argc , char *argv[]){
   int socket_desc , client_sock , c, n, length, confirmation;
@@ -43,38 +79,21 @@ int main(int argc , char *argv[]){
         return 1;
     }
 
-    n = recv(client_sock, (char *) &length, sizeof(int), 0); /*recieve the length of the string*/
-    if(n < 0){ /*check for errors receiving*/
-      printf("Error receiving\n");
-      return -1;
-    }
-    length = ntohs(length);/*convert the length received from the network*/
-    printf("Length of %i received\n",length);
-
-    if(length > 0) confirmation = 0;/*check the validity of the length received*/
-    else confirmation = -1;
-
-    if( send(client_sock , (char *) &confirmation, sizeof(int), 0) < 0){ /*send the confirmation to the client*/
-      printf("Send failed\n");
+    /* Receive an int */
+    int length;
+    if( (length = receiveInt(client_sock) ) < 0){
+      perror("receive int failed");
       return 1;
     }
-    res = (char *) malloc(sizeof(char) + sizeof(char) * n); /*allocate the memory to the input string*/
-    res[n] = '\0';
-    n = recv_msg(client_sock, (char *) res, n); /*recieve the string*/
-    if(n < 0){ /*check for errors receiving*/
-      printf("Error receiving\n");
-      return -1;
+    printf("length: %i\n", length);
+
+    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
+    char input[1024];
+    if( receiveString(client_sock, input) < 0){
+      perror("receive string failed");
+      return 1;
     }
-    printf("Message received: %s\n", res);
-    for(int i = 0; i < length; i++){ /*change the input message*/
-      res[i] = res[i] + 1;
-    }
-    printf("Message sent %s\n",res );
-    if(send_msg( client_sock, (char *) res, sizeof(char) * n) < 0){ /*send result*/
-      perror("error sending the request");
-      return -1;
-    }
-    printf("sent\n");
+    printf("String: %s\n", input);
 
     close(client_sock); /*close client socket*/
   }
