@@ -34,13 +34,11 @@ class client {
     /**
      * Receive a Byte from the server
      *
-     * @param serverName
-     * @param portNumber
+     * @param socket
      * @return the Byte received from the server
      */
-    private static Byte receiveByte(String serverName, int portNumber) {
+    private static Byte receiveByte(Socket socket) {
         try {
-            Socket socket = new Socket(serverName, portNumber); // socket to connect to the server
             DataInputStream input  = new DataInputStream(socket.getInputStream()); // buffer reader
 
             Byte response;
@@ -56,17 +54,20 @@ class client {
     }
 
     /**
-     * Send an string to the server by the given port
+     * Send an string and the operation to be performed to the server by the given port
      *
+     * @param operation: the operation to be done in the server
      * @param msg: String to be sent
      */
-    private static void sendString(Socket socket, String msg) {
+    private static void sendString(Socket socket, String operation, String msg) {
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
 
+            outputObject.write(operation.getBytes());
+            outputObject.write('\0');
             outputObject.write(msg.getBytes());
+            outputObject.write('\0');
 
-            outputObject.close(); // close the outputObject
         }  catch (IOException e) {
             System.out.println("IO exception");
             e.printStackTrace();
@@ -110,17 +111,27 @@ class client {
     {
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
-            sendString(socket, REGISTER);
-
-            //sendString(socket, user);
+            sendString(socket, REGISTER, user); // send the message to the server
+            Byte result = receiveByte(socket); // get the response byte
+            System.out.println("Byte: " + result);
             socket.close(); // close the socket
-            System.out.println("OK");
-            return  RC.OK;
-
+            switch (result){ // check the error byte of the server
+                case 0x00:
+                    System.out.println("Success");
+                    return RC.OK;
+                case 0x01:
+                    System.out.println("User error");
+                    return RC.USER_ERROR;
+                case 0x02:
+                    System.out.println("Error");
+                    return RC.ERROR;
+                default:
+                    System.out.println("Nunca tiene que salir esto");
+                    return RC.ERROR;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // Write your code here
         return RC.ERROR;
     }
 
