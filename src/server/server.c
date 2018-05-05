@@ -10,31 +10,40 @@
 #include "message.h"
 #include <netdb.h>
 
+#include <string.h>
+
 #define FALSE 0
 #define TRUE 1
 
-//pthread_mutex_t mutex_msg;
-//pthread_cond_t cond_msg;
+// pthread_mutex_t mutex_msg;
+// pthread_cond_t cond_msg;
 
 int main(int argc, char* argv[]) {
-    printf("s> ");
-
     char* server_ip;
     int server_port;
     int server_socket;
 
     struct ifreq ifr;
 
-    server_port = atoi(argv[2]);
-    server_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    // TODO: Check numeric input
+    if (argc != 3 || strcmp(argv[1], "-p") != 0) {
+      fprintf(stderr, "%s\n\n", "usage: ./server -p <port>");
+      return -1;
+    }
 
-    ifr.ifr_addr.sa_family = AF_INET;
+    server_port = atoi(argv[2]);
+    server_socket = socket(AF_INET, SOCK_DGRAM, 0); // Open socket
+
+    ifr.ifr_addr.sa_family = AF_INET; // Set family
     //snprintf(ifr.ifr_name, IFNAMSIZ, "eth0");
-    snprintf(ifr.ifr_name, IFNAMSIZ, "en0");
+    snprintf(ifr.ifr_name, IFNAMSIZ, "lo"); // TODO: Default network interface
     ioctl(server_socket, SIOCGIFADDR, &ifr);
     server_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+    /**********************************************/
 
-    printf("init server %s:%d\n", server_ip, server_port);
+    printf("s> init server %s:%d\n", server_ip, server_port);
+
+    printf("s> ");
 
     struct message msg;
     pthread_attr_t t_attr;
