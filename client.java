@@ -101,32 +101,47 @@ class client {
     }
 
     /**
+     * Call to registerConnection and dealing with errors
+     *
+     * @param user - User name to register in the system
+     */
+    static void register(String user){
+        switch(registerConnection(user)){
+            case OK:
+                System.out.println("c> REGISTER OK");
+                break;
+            case USER_ERROR:
+                System.out.println("c> USERNAME IN USE");
+                break;
+            case ERROR:
+                System.out.println("c> REGISTER FAIL");
+                break;
+        }
+    }
+
+
+    /**
      * @param user - User name to register in the system
      *
      * @return OK if successful
      * @return USER_ERROR if the user is already registered
      * @return ERROR if another error occurred
      */
-    static RC register(String user)
+    static RC registerConnection(String user)
     {
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
             sendString(socket, REGISTER, user); // send the message to the server
             Byte result = receiveByte(socket); // get the response byte
-            System.out.println("Byte: " + result);
             socket.close(); // close the socket
             switch (result){ // check the error byte of the server
                 case 0x00:
-                    System.out.println("Success");
                     return RC.OK;
                 case 0x01:
-                    System.out.println("User error");
                     return RC.USER_ERROR;
                 case 0x02:
-                    System.out.println("Error");
                     return RC.ERROR;
                 default:
-                    System.out.println("Nunca tiene que salir esto");
                     return RC.ERROR;
             }
         } catch (IOException e) {
@@ -208,7 +223,8 @@ class client {
                     /*********** REGISTER *************/
                     if (line[0].equals("REGISTER")) {
                         if  (line.length == 2) {
-                            register(line[1]); // userName = line[1]
+                            // userName = line[1]
+                            register(line[1]);
                         } else {
                             System.out.println("Syntax error. Usage: REGISTER <userName>");
                         }
@@ -330,23 +346,6 @@ class client {
 			usage();
 			return;
 		}
-        /* ********** Variables to use *********** */
-//        String stringToSend = "TEST"; // String to send to the server
-//        String serverName = argv[1]; // name of the server
-//        int portNumber = Integer.parseInt(argv[3]); // port number
-//
-//        String msg = "SEND"; /* message to send to the server */
-//
-//        sendInt(serverName, portNumber, msg.length()); /* send integer */
-//
-//        sendString(serverName, portNumber, msg); /* send a string */
-//
-//        Byte input = receiveByte(serverName, portNumber); /* receive a String from the server */
-//
-//        if(input == 0)  System.out.println("0");
-//        else if(input == 1)  System.out.println("1");
-//        if(input == 2)  System.out.println("2");
-
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
         shell();
