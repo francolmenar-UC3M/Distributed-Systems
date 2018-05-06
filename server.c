@@ -100,19 +100,30 @@ int main(int argc , char *argv[]){
 
 
     //client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
-    char input[MAX_LINE];
-    if( receiveString(client_sock, input) < 0){
+    char operation[MAX_LINE];
+    if( receiveString(client_sock, operation) < 0){
       perror("receive string failed");
       return 1;
     }
-    printf("String: %s\n", input);
+    printf("String: %s\n", operation);
 
+    char username[MAX_LINE];
 
-      if( receiveString(client_sock, input) < 0){
+      if( receiveString(client_sock, username) < 0){
       perror("receive string failed");
       return 1;
     }
-    printf("User: %s\n", input);
+    printf("User: %s\n", username);
+
+    if(strcmp(operation, "CONNECT") == 0){
+      char port[MAX_LINE];
+
+      if( receiveString(client_sock, port) < 0){
+        perror("receive string failed");
+        return 1;
+      }
+      printf("Port: %s\n", port);
+    }
 
     //close(client_sock); /*close client socket*/
 

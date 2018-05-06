@@ -18,16 +18,22 @@ class client {
     private static enum RC {
         OK,
         ERROR,
-        USER_ERROR
+        USER_ERROR,
+        FAIL
     };
 
     /******************* ATTRIBUTES *******************/
 
     private static String _server   = null;
     private static int _port = -1;
+    private static int freePort = -1;
 
     private static final String REGISTER = "REGISTER";
     private static final String UNREGISTER = "UNREGISTER";
+    private static final String CONNECT = "CONNECT";
+    private static final int maxSize = 256;
+
+
 
 
     /********************* METHODS ********************/
@@ -55,20 +61,17 @@ class client {
     }
 
     /**
-     * Send an string and the operation to be performed to the server by the given port
+     * @brief Send an string to the server
      *
      * @param operation: the operation to be done in the server
      * @param msg: String to be sent
      */
-    private static void sendString(Socket socket, String operation, String msg) {
+    private static void sendString(Socket socket, String msg) {
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
 
-            outputObject.write(operation.getBytes());
-            outputObject.write('\0');
             outputObject.write(msg.getBytes());
             outputObject.write('\0');
-
         }  catch (IOException e) {
             System.out.println("IO exception");
             e.printStackTrace();
@@ -106,15 +109,18 @@ class client {
      *
      * @param user: User name to register in the system
      * @param operation: The name of the operation to perform (register,...)
+     * @param port: the port sent to the server in some operations, such as connect
      *
      * @return OK if successful
      * @return USER_ERROR in case of any error related to the user
      * @return ERROR if another error occurred
      */
-    static RC registerComunication(String user, String operation){
+    static RC registerComunication(String user, String operation, String port){
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
-            sendString(socket, operation, user); // send the message to the server
+            sendString(socket, operation); // send the operation to the server
+            sendString(socket, user); // send the username to the server
+            if(port != "-1"){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
             Byte result = receiveByte(socket); // get the response byte
             socket.close(); // close the socket
             switch (result){ // check the error byte of the server
@@ -124,6 +130,8 @@ class client {
                     return RC.USER_ERROR;
                 case 0x02:
                     return RC.ERROR;
+                case 0x03:
+                    return RC.FAIL;
                 default:
                     return RC.ERROR;
             }
@@ -134,56 +142,62 @@ class client {
     }
 
     /**
-     * Call to registerConnection and dealing with errors
+     * @brief Deal with the errors of the operation's execution
+     *
+     * @param error: the return value of the execution of an operation
+     * @param msg: Array of error messages to print
+     */
+    static void dealWithErrors(RC error, String [] msg){
+        switch(error){
+            case OK:
+                System.out.println(msg[0]);
+                break;
+            case USER_ERROR:
+                System.out.println(msg[1]);
+                break;
+            case ERROR:
+                System.out.println(msg[2]);
+                break;
+            case FAIL:
+                System.out.println(msg[3]);
+                break;
+            default:
+                System.out.println("DEFAULT CASE (IT SHOULD NEVER ARRIVED HERE)");
+                break;
+        }
+    }
+
+    /**
+     * @brief Send the register request to the server
      *
      * @param user - User name to register in the system
      */
     static void register(String user){
-        switch(registerComunication(user, REGISTER)){
-            case OK:
-                System.out.println("c> REGISTER OK");
-                break;
-            case USER_ERROR:
-                System.out.println("c> USERNAME IN USE");
-                break;
-            case ERROR:
-                System.out.println("c> REGISTER FAIL");
-                break;
-        }
+        String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
+        dealWithErrors(registerComunication(user, REGISTER,"-1"), msg); // Perform the registration
     }
 
     /**
-     * @param user - User name to unregister from the system
+     * @brief Send the unregister request to the server
      *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist
-     * @return ERROR if another error occurred
+     * @param user - User name to unregister from the system
      */
     static void unregister(String user){
-        switch(registerComunication(user, REGISTER)){
-            case OK:
-                System.out.println("c> UNREGISTER OK");
-                break;
-            case USER_ERROR:
-                System.out.println("c> USER DOES NOT EXIST");
-                break;
-            case ERROR:
-                System.out.println("c> UNREGISTER FAIL");
-                break;
-        }
+        String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
+        dealWithErrors(registerComunication(user, UNREGISTER,"-1"), msg); // Perforrm the unregistration
     }
 
     /**
-     * @param user - User name to connect to the system
+     * @brief Send the connect request to the server
      *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist or if it is already connected
-     * @return ERROR if another error occurred
+     * @param user - User name to connect to the system
      */
-    static RC connect(String user)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void connect(String user){
+        String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
+        dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort)), msg); // Perforrm the connection
+        Thread thread = new Thread(new Connect_Runnable(_server,freePort));
+        thread.start();
+        freePort++; // Update the free port
     }
 
     /**
@@ -233,8 +247,7 @@ class client {
                     /*********** REGISTER *************/
                     if (line[0].equals("REGISTER")) {
                         if  (line.length == 2) {
-                            // userName = line[1]
-                            register(line[1]);
+                            register(line[1]); // userName = line[1]
                         } else {
                             System.out.println("Syntax error. Usage: REGISTER <userName>");
                         }
@@ -358,6 +371,7 @@ class client {
 		}
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
+        freePort = _port + 1; // free port
         shell();
     }
 
