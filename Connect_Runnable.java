@@ -13,11 +13,10 @@ public class Connect_Runnable implements Runnable {
     }
 
     public void run(){
-        while(true){
-            try {
-                ServerSocket serverSocket = new ServerSocket(portNumber); // socket to listen to the server
-                Socket clientSocket = serverSocket.accept(); // accept the connection
-
+        try {
+            ServerSocket serverSocket = new ServerSocket(portNumber); // socket to listen to the server
+            Socket clientSocket = serverSocket.accept(); // accept the connection
+            while(true){
                 DataInputStream input  = new DataInputStream(clientSocket.getInputStream()); // buffer reader
 
                 byte[] msg = new byte[maxSize];
@@ -25,9 +24,11 @@ public class Connect_Runnable implements Runnable {
                     System.out.println("Error reading the message");
                 }
 
-            } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Message received: " + msg);
             }
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

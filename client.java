@@ -196,7 +196,7 @@ class client {
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
         dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort)), msg); // Perforrm the connection
         Thread thread = new Thread(new Connect_Runnable(_server,freePort));
-        thread.start();
+        // thread.start(); //Discomment when the server sends correctly the messages to the thread
         freePort++; // Update the free port
     }
 
