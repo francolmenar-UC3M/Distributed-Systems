@@ -8,7 +8,6 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include "message.h"
-#include "request.h"
 #include <netdb.h>
 
 #include <unistd.h>
@@ -111,12 +110,13 @@ int main(int argc, char* argv[]) {
 }
 
 int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
-  if (strcmp(req->operation, "REGISTER\0") != 0) {
-    if (search(req->data) != NULL) {
-      printf("s> REGISTER %s FAIL\n", req->data);
+  if (strcmp(operation, "REGISTER\0") == 0) {
+    if (search(args) != NULL) {
+      printf("s> REGISTER %s FAIL\n", args);
+      return -1;
     } else {
       struct user *new_user = (struct user*)malloc(sizeof(struct user));
-      strcpy(new_user->username, req->data);
+      strcpy(new_user->username, args);
       new_user->status = 0;
       new_user->ip_address = &client_addr->sin_addr;
       new_user->port = ntohs(client_addr->sin_port);
@@ -126,8 +126,19 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
       Node* new_node = getNewNode(new_user);
       insert(new_node);
       printList();
-      printf("s> REGISTER %s OK\n", req->data);
+      printf("s> REGISTER tu mama OK\n");
     }
+  } else if (strcmp(operation, "UNREGISTER\0") == 0) {
+    /* code for unregister */
+  } else if (strcmp(operation, "CONNECT\0") == 0) {
+    /* code for connect */
+  } else if (strcmp(operation, "DISCONNECT\0") == 0) {
+    /* code for disconnect */
+  } else if (strcmp(operation, "SEND\0") == 0) {
+    /* code for send */
+  } else {
+    fprintf(stderr, "ERROR TU PUTA MADRE: %s\n", args);
+    return -2;
   }
   return 0;
 }
@@ -135,7 +146,6 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
 int process_request(int* s) {
   int s_local;
   struct sockaddr_in local_client;
-  struct request local_req;
 
   pthread_mutex_lock(&mutex_msg);
   s_local = *s;
@@ -147,9 +157,8 @@ int process_request(int* s) {
 
   getpeername(s_local, (struct sockaddr * restrict)&local_client, &size);
 
-  read(s_local, &local_req, sizeof(struct request));
-
   char operation[24];
+  char args[256];
   bzero(&operation, sizeof(operation));
   if (readLine(s_local, operation, sizeof(operation)) == -1) {
     fprintf(stderr, "ERROR reading line\n");
@@ -157,9 +166,17 @@ int process_request(int* s) {
     pthread_exit(&error);
   }
 
-  int return_code = process_data(&local_client, operation, );
+  bzero(&args, sizeof(args));
+  if (readLine(s_local, operation, sizeof(args)) == -1) {
+    fprintf(stderr, "ERROR reading line\n");
+    int error = -2;
+    pthread_exit(&error);
+  }
+
+  int return_code = process_data(&local_client, operation, args);
 
   send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
+  fprintf(stderr, "Sent code: %d\n", return_code);
   close(s_local);
   pthread_exit(0);
 
