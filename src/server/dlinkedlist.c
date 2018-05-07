@@ -1,149 +1,176 @@
-// A complete working C program to demonstrate all insertion methods
 #include <stdio.h>
 #include <stdlib.h>
- 
-// A linked list node
-struct Node
-{
-    int data;
-    struct Node *next;
-    struct Node *prev;
-};
- 
-/* Given a reference (pointer to pointer) to the head of a list
-   and an int, inserts a new node on the front of the list. */
-void push(struct Node** head_ref, int new_data)
-{
-    /* 1. allocate node */
-    struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
- 
-    /* 2. put in the data  */
-    new_node->data  = new_data;
- 
-    /* 3. Make next of new node as head and previous as NULL */
-    new_node->next = (*head_ref);
-    new_node->prev = NULL;
- 
-    /* 4. change prev of head node to new node */
-    if((*head_ref) !=  NULL)
-      (*head_ref)->prev = new_node ;
- 
-    /* 5. move the head to point to the new node */
-    (*head_ref)    = new_node;
-}
- 
-/* Given a node as prev_node, insert a new node after the given node */
-void insertAfter(struct Node* prev_node, int new_data)
-{
-    /*1. check if the given prev_node is NULL */
-    if (prev_node == NULL)
-    {
-        printf("the given previous node cannot be NULL");
-        return;
-    }
- 
-    /* 2. allocate new node */
-    struct Node* new_node =(struct Node*) malloc(sizeof(struct Node));
- 
-    /* 3. put in the data  */
-    new_node->data  = new_data;
- 
-    /* 4. Make next of new node as next of prev_node */
-    new_node->next = prev_node->next;
- 
-    /* 5. Make the next of prev_node as new_node */
-    prev_node->next = new_node;
- 
-    /* 6. Make prev_node as previous of new_node */
-    new_node->prev = prev_node;
- 
-    /* 7. Change previous of new_node's next node */
-    if (new_node->next != NULL)
-      new_node->next->prev = new_node;
-}
- 
-/* Given a reference (pointer to pointer) to the head
-   of a DLL and an int, appends a new node at the end  */
-void append(struct Node** head_ref, int new_data)
-{
-    /* 1. allocate node */
-    struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
- 
-    struct Node *last = *head_ref;  /* used in step 5*/
- 
-    /* 2. put in the data  */
-    new_node->data  = new_data;
- 
-    /* 3. This new node is going to be the last node, so
-          make next of it as NULL*/
-    new_node->next = NULL;
- 
-    /* 4. If the Linked List is empty, then make the new
-          node as head */
-    if (*head_ref == NULL)
-    {
-        new_node->prev = NULL;
-        *head_ref = new_node;
-        return;
-    }
- 
-    /* 5. Else traverse till the last node */
-    while (last->next != NULL)
-        last = last->next;
- 
-    /* 6. Change the next of last node */
-    last->next = new_node;
- 
-    /* 7. Make last node as previous of new node */
-    new_node->prev = last;
- 
-    return;
-}
- 
-// This function prints contents of linked list starting from the given node
-void printList(struct Node *node)
-{
-    struct Node *last;
-    printf("\nTraversal in forward direction \n");
-    while (node != NULL)
-    {
-        printf(" %d ", node->data);
-        last = node;
+#include <string.h>
+
+#define MAXSIZE 256
+
+/* Definition of a node of the data structure */
+typedef struct Node  {
+    struct user* data;
+    struct Node* next;
+    struct Node* prev;
+} Node;
+
+/* Head of the Doubly Linked List*/
+Node* head;
+
+/* Deletes all the list and frees the memory */
+int destroyList() {
+    if(head == NULL) return 0;
+
+    Node* node = head;
+    Node* temp;
+    while(node != NULL) {
+        temp = node;
         node = node->next;
+        free(temp);
     }
- 
-    printf("\nTraversal in reverse direction \n");
-    while (last != NULL)
-    {
-        printf(" %d ", last->data);
-        last = last->prev;
-    }
-}
- 
-/* Drier program to test above functions*/
-int main()
-{
-    /* Start with the empty list */
-    struct Node* head = NULL;
- 
-    // Insert 6.  So linked list becomes 6->NULL
-    append(&head, 6);
- 
-    // Insert 7 at the beginning. So linked list becomes 7->6->NULL
-    push(&head, 7);
- 
-    // Insert 1 at the beginning. So linked list becomes 1->7->6->NULL
-    push(&head, 1);
- 
-    // Insert 4 at the end. So linked list becomes 1->7->6->4->NULL
-    append(&head, 4);
- 
-    // Insert 8, after 7. So linked list becomes 1->7->8->6->4->NULL
-    insertAfter(head->next, 8);
- 
-    printf("Created DLL is: ");
-    printList(head);
- 
-    getchar();
+
+    head = NULL;
+
     return 0;
+}
+
+/* Method to create a new node */
+Node* getNewNode(struct user* data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+
+    newNode->data = data;
+    newNode->prev = NULL;
+    newNode->next = NULL;
+
+    return newNode;
+}
+
+/* Method to print in stdout the current nodes and their values (debugging) */
+void printList() {
+	Node* temp = head;
+  int counter = 0;
+	while(temp != NULL) {
+		printf("NODE %d: %s, status: %d, %u:%d\n", counter, temp->data->username, temp->data->status, temp->data->ip_addr, temp->data->port);
+		temp = temp->next;
+    counter++;
+	}
+}
+
+/* Method to insert a new node in the list. This node will be added at the end */
+int insert(Node* newNode) {
+    Node* temp = head;
+
+    if(head == NULL) {
+        head = newNode;
+        return 0;
+    }
+
+    while(temp != NULL) {
+        if(strcmp(temp->data->username, newNode->data->username) == 0) {
+            /* Key already exists */
+            printList();
+            return -1;
+        }
+
+        if(temp->next != NULL) {
+            temp = temp->next;
+        } else {
+            break;
+        }
+    }
+
+    temp->next = newNode;
+    newNode->prev = temp;
+    return 0;
+}
+
+/* Deletes the node with the provided key */
+int delete(char* username) {
+    Node* temp = head;
+
+    if(head == NULL) {
+        return -1;
+    }
+
+    while(temp != NULL) {
+        if(strcmp(temp->data->username, username) == 0) {
+            if(temp == head) {
+                head = temp->next;
+                free(temp);
+                return 0;
+            }
+
+            Node* prev = temp->prev;
+            Node* next = temp->next;
+
+            prev->next = temp->next;
+            next->prev = temp->prev;
+
+            free(temp);
+            return 0;
+        }
+        temp = temp->next;
+    }
+
+    return -1;
+}
+
+/* Returns the node with the provided key associated */
+Node* search(char* username) {
+    Node* temp = head;
+
+    if(head == NULL) {
+        return NULL;
+    }
+
+    while(temp != NULL) {
+      if(strcmp(temp->data->username, username) == 0) {
+            return temp;
+        }
+	      temp = temp->next;
+    }
+
+    return NULL;
+}
+
+
+int modify(Node* newNode) {
+    Node* temp = head;
+
+    if(head == NULL) {
+        /* Empty list */
+        return -1;
+    }
+
+    while(temp != NULL) {
+      if(strcmp(temp->data->username, newNode->data->username) == 0) {
+            /* Key found */
+            temp->data = newNode->data;
+            printList();
+            return 0;
+        }
+
+        if(temp->next != NULL) {
+            temp = temp->next;
+        } else {
+            break;
+        }
+    }
+    /* Key not found */
+    return -1;
+}
+
+/* Returns the number of nodes currently stored in the list */
+int getCardinality() {
+    Node* temp = head;
+    int count = 0;
+
+    if(head == NULL) {
+      /* Empty list */
+      return 0;
+    }
+
+    while(temp != NULL) {
+      count++;
+    	temp = temp->next;
+    }
+
+    return count;
 }
