@@ -19,7 +19,8 @@ class client {
         OK,
         ERROR,
         USER_ERROR,
-        FAIL
+        FAIL,
+        SWITCH_ERROR // to check if the server sends a byte different to the expected ones
     };
 
     /******************* ATTRIBUTES *******************/
@@ -27,10 +28,14 @@ class client {
     private static String _server   = null;
     private static int _port = -1;
     private static int freePort = -1;
+    private static Thread thread;
 
     private static final String REGISTER = "REGISTER";
     private static final String UNREGISTER = "UNREGISTER";
     private static final String CONNECT = "CONNECT";
+    private static final String DISCONNECT = "DISCONNECT";
+    private static final String SEND = "SEND";
+
     private static final int maxSize = 256;
 
 
@@ -110,17 +115,22 @@ class client {
      * @param user: User name to register in the system
      * @param operation: The name of the operation to perform (register,...)
      * @param port: the port sent to the server in some operations, such as connect
+     * @param message: the message to be sent to a user
      *
      * @return OK if successful
      * @return USER_ERROR in case of any error related to the user
      * @return ERROR if another error occurred
      */
-    static RC registerComunication(String user, String operation, String port){
+    static RC registerComunication(String user, String operation, String port, String message){
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
             sendString(socket, operation); // send the operation to the server
             sendString(socket, user); // send the username to the server
-            if(port != "-1"){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
+            if(operation == CONNECT){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
+            else if(operation == SEND){
+                // A string is sent with the name that identifies the recipient user of the message message.
+                sendString(socket, message);
+            }
             Byte result = receiveByte(socket); // get the response byte
             socket.close(); // close the socket
             switch (result){ // check the error byte of the server
@@ -133,12 +143,13 @@ class client {
                 case 0x03:
                     return RC.FAIL;
                 default:
-                    return RC.ERROR;
+                    return RC.SWITCH_ERROR;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return RC.ERROR;
+        if (operation == CONNECT  || DISCONNECT == UNREGISTER) {return RC.FAIL;}
+        else {return RC.ERROR;}
     }
 
     /**
@@ -174,7 +185,7 @@ class client {
      */
     static void register(String user){
         String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
-        dealWithErrors(registerComunication(user, REGISTER,"-1"), msg); // Perform the registration
+        dealWithErrors(registerComunication(user, REGISTER,"-1", "NONE"), msg); // Perform the registration
     }
 
     /**
@@ -184,7 +195,7 @@ class client {
      */
     static void unregister(String user){
         String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
-        dealWithErrors(registerComunication(user, UNREGISTER,"-1"), msg); // Perforrm the unregistration
+        dealWithErrors(registerComunication(user, UNREGISTER,"-1", "NONE"), msg); // Perforrm the unregistration
     }
 
     /**
@@ -194,26 +205,26 @@ class client {
      */
     static void connect(String user){
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
-        dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort)), msg); // Perforrm the connection
-        Thread thread = new Thread(new Connect_Runnable(_server,freePort));
-        // thread.start(); //Discomment when the server sends correctly the messages to the thread
+        dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort), "NONE"), msg); // Perforrm the connection
+        thread = new Thread(new Connect_Runnable(_server,freePort));
+        //thread.start(); //Discomment when the server sends correctly the messages to the thread
         freePort++; // Update the free port
     }
 
     /**
-     * @param user - User name to disconnect from the system
+     * @brief Disconnect an user
      *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist
-     * @return ERROR if another error occurred
+     * @param user - User name to disconnect from the system
      */
-    static RC disconnect(String user)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void disconnect(String user){
+        String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
+        dealWithErrors(registerComunication(user, DISCONNECT, "-1", "NONE"), msg); // Perforrm the connection
+        //thread.interrupt(); ISSUEEEEE
     }
 
     /**
+     * @brief Send a message to a user
+     *
      * @param user    - Receiver user name
      * @param message - Message to be sent
      *
@@ -221,10 +232,9 @@ class client {
      * @return USER_ERROR if the user is not connected (the message is queued for delivery)
      * @return ERROR the user does not exist or another error occurred
      */
-    static RC send(String user, String message)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void send(String user, String message){
+        String [] msg = {"c> SEND OK - MESSAGE id" , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
+        dealWithErrors(registerComunication(user, SEND, "-1", message), msg); // Perforrm the connection
     }
 
     /**

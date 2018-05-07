@@ -24,7 +24,7 @@ public class Connect_Runnable implements Runnable {
                     System.out.println("Error reading the message");
                 }
 
-                System.out.println("Message received: " + msg);
+                System.out.print("Message received: " + msg);
             }
 
         } catch (IOException e) {

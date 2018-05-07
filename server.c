@@ -181,7 +181,7 @@ int main(int argc , char *argv[]){
     printf("User: %s\n", username);
 
     if(strcmp(operation, "CONNECT") == 0){
-      
+
      // connectOp(client_sock);
     }
 
