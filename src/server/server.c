@@ -24,16 +24,16 @@ pthread_mutex_t mutex_msg;
 pthread_cond_t cond_msg;
 int sock_not_free = 1;
 
-int server_socket;
-
-int process_request(struct sockaddr_in* client, struct request* req);
+int process_request(int* s);
 
 int main(int argc, char* argv[]) {
     char* server_ip;
     int server_port;
-    // int server_socket;
+    int server_socket, client_socket;
     struct sockaddr_in server, client;
+    struct ifreq ifr;
     socklen_t peer_addr_size = sizeof(struct sockaddr_in);
+    int val;
 
     // TODO: Check numeric input
     if (argc != 3 || strcmp(argv[1], "-p") != 0) {
@@ -44,12 +44,16 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // Open socket
 
+    val = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(int));
+
     if (server_socket == -1) {
       fprintf(stderr, "%s\n", "ERROR socket cannot be opened");
       return -1;
     }
 
-    struct ifreq ifr;
+    bzero((char *)&ifr, sizeof(struct ifreq));
+
     ifr.ifr_addr.sa_family = AF_INET; // Set family IPv4
     //snprintf(ifr.ifr_name, IFNAMSIZ, "eth0");
     snprintf(ifr.ifr_name, IFNAMSIZ, "lo"); // TODO: Default network interface
@@ -57,6 +61,7 @@ int main(int argc, char* argv[]) {
     server_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
     /**********************************************/
 
+    bzero((char *)&server, sizeof(struct sockaddr_in));
     server.sin_family = AF_INET;
     if (inet_aton(server_ip, &server.sin_addr) == 0) {
       fprintf(stderr, "%s\n", "ERROR invalid IP address");
@@ -88,8 +93,10 @@ int main(int argc, char* argv[]) {
       printf("s> ");
       printf("vale\n");
 
-      accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
-      pthread_create(&thr, &t_attr, (void*)process_request, &client);
+      bzero((char *)&client, sizeof(struct sockaddr_in));
+      client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
+
+      pthread_create(&thr, &t_attr, (void *)process_request, (void *)&client_socket);
 
       pthread_mutex_lock(&mutex_msg);
       while(sock_not_free) {
@@ -105,23 +112,26 @@ int process_data(struct request* req) {
   return 0;
 }
 
-int process_request(struct sockaddr_in* client, struct request* req) {
+int process_request(int* s) {
+  int s_local;
   struct sockaddr_in local_client;
   struct request local_req;
-  int dedicated_sock;
 
   pthread_mutex_lock(&mutex_msg);
-  memcpy(&local_client, &client, sizeof(struct sockaddr_in));
-  read(server_socket, &local_req, sizeof(struct request));
-
+  s_local = *s;
   sock_not_free = FALSE;
   pthread_cond_signal(&cond_msg);
-
   pthread_mutex_unlock(&mutex_msg);
+
+  read(s_local, &local_req, sizeof(struct request));
+  printf("SOCKET new %d\n", s_local);
 
   int return_code = process_data(&local_req);
 
-  dedicated_sock = socket(AF_INET, SOCK_STREAM, 0); // Open socket
+  write(s_local, &return_code, sizeof(int));
+  close(s_local);
+
+  pthread_exit(0);
 
   return 0;
 }
