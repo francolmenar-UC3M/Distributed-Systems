@@ -26,7 +26,9 @@ class client {
     /******************* ATTRIBUTES *******************/
 
     private static String _server   = null;
+    private static String userName = null; // user register in the system
     private static String idMessage = "-1"; // used for SEND
+
     private static int _port = -1;
     private static int freePort = -1;
     private static Thread thread;
@@ -71,13 +73,12 @@ class client {
         return "-1";
     }
 
-
-        /**
-         * @brief Send an string to the server
-         *
-         * @param operation: the operation to be done in the server
-         * @param msg: String to be sent
-         */
+    /**
+     * @brief Send an string to the server
+     *
+     * @param operation: the operation to be done in the server
+     * @param msg: String to be sent
+     */
     private static void sendString(Socket socket, String msg) {
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
@@ -132,13 +133,23 @@ class client {
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
             sendString(socket, operation); // send the operation to the server
-            sendString(socket, user); // send the username to the server
 
+            if(operation != SEND){ sendString(socket, user);} // send the username to the server
+
+            /* CONNECT */
             if(operation == CONNECT){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
-            else if(operation == SEND){ sendString(socket, message);} // If the operation is a SEND, the message is sent too
 
+            /* SEND */
+            else if(operation == SEND){
+                sendString(socket, userName); // If the operation is a SEND, the message is sent too
+                sendString(socket, user); // send the username to the server
+                sendString(socket, message); // If the operation is a SEND, the message is sent too
+            }
             Byte result = receiveByte(socket); // get the response byte
+
+            /* SEND AND CORRECT RESULT */
             if(operation == SEND && result == 0x00) { idMessage = receiveString(socket);} // get the id associated to the message sent (only in SENT)
+
             socket.close(); // close the socket
 
             switch (result){ // check the error byte of the server
@@ -156,8 +167,7 @@ class client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        if (operation == CONNECT  || DISCONNECT == UNREGISTER) {return RC.FAIL;}
+        if (operation == CONNECT  || operation == DISCONNECT) {return RC.FAIL;}
         else {return RC.ERROR;}
     }
 
@@ -194,7 +204,9 @@ class client {
      */
     static void register(String user){
         String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
-        dealWithErrors(registerComunication(user, REGISTER,"-1", "NONE"), msg); // Perform the registration
+        RC result = registerComunication(user, REGISTER,"-1", "NONE"); // Execute the sending and obtaining the result
+        dealWithErrors(result, msg); // Perform the registration
+        if(result == RC.OK){ userName = user;} // set the new user registered
     }
 
     /**
@@ -204,7 +216,9 @@ class client {
      */
     static void unregister(String user){
         String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
-        dealWithErrors(registerComunication(user, UNREGISTER,"-1", "NONE"), msg); // Perforrm the unregistration
+        RC result = registerComunication(user, UNREGISTER,"-1", "NONE"); // Execute the sending and obtaining the result
+        dealWithErrors(result, msg); // Perforrm the unregistration
+        if(result == RC.OK || result == RC.FAIL){ userName = null;} // set the register user to null
     }
 
     /**
