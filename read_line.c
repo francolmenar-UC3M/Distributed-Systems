@@ -8,7 +8,7 @@ int send_msg(int socket, char *message, int length){
 	do {
 		r = write(socket, message, l); /*write in the socket*/
 		l = l -r; /*substracting the amount writen in the socket to the total lenght*/
-		message = message + r; /*NI IDEAA*/
+		message = message + r; /* increment offset in the buffer */
 	} while ((l>0) && (r>=0)); /*while there is something to write*/
 
 	if (r < 0)

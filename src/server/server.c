@@ -15,6 +15,9 @@
 #include <string.h>
 #include <errno.h>
 
+#include "dlinkedlist.c"
+#include "../../read_line.h"
+
 #define FALSE 0
 #define TRUE 1
 
@@ -88,10 +91,9 @@ int main(int argc, char* argv[]) {
     pthread_t thr;
 
     printf("s> init server %s:%d\n", server_ip, server_port);
+    printf("s> ");
 
     while(TRUE) {
-      printf("s> ");
-      printf("vale\n");
 
       bzero((char *)&client, sizeof(struct sockaddr_in));
       client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
@@ -104,11 +106,29 @@ int main(int argc, char* argv[]) {
       }
       sock_not_free = TRUE;
       pthread_mutex_unlock(&mutex_msg);
+
     }
 }
 
-int process_data(struct request* req) {
+int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
+  if (strcmp(req->operation, "REGISTER\0") != 0) {
+    if (search(req->data) != NULL) {
+      printf("s> REGISTER %s FAIL\n", req->data);
+    } else {
+      struct user *new_user = (struct user*)malloc(sizeof(struct user));
+      strcpy(new_user->username, req->data);
+      new_user->status = 0;
+      new_user->ip_address = &client_addr->sin_addr;
+      new_user->port = ntohs(client_addr->sin_port);
+      // queue* pending_messages;
+      // new_user->last_message;
 
+      Node* new_node = getNewNode(new_user);
+      insert(new_node);
+      printList();
+      printf("s> REGISTER %s OK\n", req->data);
+    }
+  }
   return 0;
 }
 
@@ -123,14 +143,24 @@ int process_request(int* s) {
   pthread_cond_signal(&cond_msg);
   pthread_mutex_unlock(&mutex_msg);
 
+  int size = sizeof(struct sockaddr_in);
+
+  getpeername(s_local, (struct sockaddr * restrict)&local_client, &size);
+
   read(s_local, &local_req, sizeof(struct request));
-  printf("SOCKET new %d\n", s_local);
 
-  int return_code = process_data(&local_req);
+  char operation[24];
+  bzero(&operation, sizeof(operation));
+  if (readLine(s_local, operation, sizeof(operation)) == -1) {
+    fprintf(stderr, "ERROR reading line\n");
+    int error = -2;
+    pthread_exit(&error);
+  }
 
-  write(s_local, &return_code, sizeof(int));
+  int return_code = process_data(&local_client, operation, );
+
+  send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
   close(s_local);
-
   pthread_exit(0);
 
   return 0;

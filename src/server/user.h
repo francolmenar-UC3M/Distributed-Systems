@@ -1,8 +1,10 @@
+#include <netinet/in.h>
+
 struct user {
-    char[256] username;
+    char username[256];
     int status;
-    unsigned long ip_addr;
+    struct in_addr* ip_address;
     int port;
-    queue* pending_messages;
-    int last_message;
+    // queue* pending_messages;
+    // int last_message;
 };

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "user.h"
+
 #define MAXSIZE 256
 
 /* Definition of a node of the data structure */
@@ -47,7 +49,7 @@ void printList() {
 	Node* temp = head;
   int counter = 0;
 	while(temp != NULL) {
-		printf("NODE %d: %s, status: %d, %u:%d\n", counter, temp->data->username, temp->data->status, temp->data->ip_addr, temp->data->port);
+		printf("NODE %d: %s, status: %d, %s:%d\n", counter, temp->data->username, temp->data->status, inet_ntoa(*(temp->data->ip_address)), temp->data->port);
 		temp = temp->next;
     counter++;
 	}
