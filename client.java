@@ -26,6 +26,7 @@ class client {
     /******************* ATTRIBUTES *******************/
 
     private static String _server   = null;
+    private static String idMessage = "-1"; // used for SEND
     private static int _port = -1;
     private static int freePort = -1;
     private static Thread thread;
@@ -65,12 +66,18 @@ class client {
         }
     }
 
-    /**
-     * @brief Send an string to the server
-     *
-     * @param operation: the operation to be done in the server
-     * @param msg: String to be sent
-     */
+
+    private static String receiveString(Socket socket) {
+        return "-1";
+    }
+
+
+        /**
+         * @brief Send an string to the server
+         *
+         * @param operation: the operation to be done in the server
+         * @param msg: String to be sent
+         */
     private static void sendString(Socket socket, String msg) {
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
@@ -126,13 +133,14 @@ class client {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
             sendString(socket, operation); // send the operation to the server
             sendString(socket, user); // send the username to the server
+
             if(operation == CONNECT){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
-            else if(operation == SEND){
-                // A string is sent with the name that identifies the recipient user of the message message.
-                sendString(socket, message);
-            }
+            else if(operation == SEND){ sendString(socket, message);} // If the operation is a SEND, the message is sent too
+
             Byte result = receiveByte(socket); // get the response byte
+            if(operation == SEND && result == 0x00) { idMessage = receiveString(socket);} // get the id associated to the message sent (only in SENT)
             socket.close(); // close the socket
+
             switch (result){ // check the error byte of the server
                 case 0x00:
                     return RC.OK;
@@ -148,6 +156,7 @@ class client {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         if (operation == CONNECT  || DISCONNECT == UNREGISTER) {return RC.FAIL;}
         else {return RC.ERROR;}
     }
@@ -233,8 +242,10 @@ class client {
      * @return ERROR the user does not exist or another error occurred
      */
     static void send(String user, String message){
-        String [] msg = {"c> SEND OK - MESSAGE id" , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
-        dealWithErrors(registerComunication(user, SEND, "-1", message), msg); // Perforrm the connection
+        String [] msg = {"c> SEND OK - MESSAGE " , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
+        RC result = registerComunication(user, SEND, "-1", message); // Execute the sending and obtaining the result
+        msg[0] += "" + idMessage; // Concatenate the id of the message to the message
+        dealWithErrors(result, msg); // Perforrm the connection
     }
 
     /**
