@@ -96,7 +96,6 @@ int main(int argc, char* argv[]) {
 
       bzero((char *)&client, sizeof(struct sockaddr_in));
       client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
-printf("NEW %d\n", client_socket);
       pthread_create(&thr, &t_attr, &process_request, (void *)&client_socket);
 
       pthread_mutex_lock(&mutex_msg);
@@ -202,7 +201,6 @@ void* process_request(void* s) {
 
   pthread_mutex_lock(&mutex_msg);
   s_local = *(int*)s;
-  printf("PERO QUE POLLAS%d\n", s_local);
   sock_not_free = FALSE;
   pthread_cond_signal(&cond_msg);
   pthread_mutex_unlock(&mutex_msg);

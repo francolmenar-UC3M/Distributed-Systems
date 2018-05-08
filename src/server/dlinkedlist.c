@@ -145,7 +145,6 @@ int modify(Node* newNode) {
       if(strcmp(temp->data->username, newNode->data->username) == 0) {
             /* Key found */
             temp->data = newNode->data;
-            printList();
             return 0;
         }
 
