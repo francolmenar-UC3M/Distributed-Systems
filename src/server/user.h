@@ -7,5 +7,5 @@ struct user {
     struct in_addr* ip_address;
     int port;
     Queue* pending_messages;
-    // int last_message;
+    unsigned int last_message;
 };
