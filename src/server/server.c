@@ -28,6 +28,8 @@ pthread_cond_t cond_msg;
 int sock_not_free = 1;
 
 void* process_request(void* s);
+int disconnect(char* username);
+int unregister(char* username);
 
 int main(int argc, char* argv[]) {
     char* server_ip;
@@ -138,7 +140,7 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
       printf("s> REGISTER %s OK\n", username);
     }
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
-    /* code for unregister */
+    unregister(username);
   } else if (strcmp(operation, "CONNECT\0") == 0) {
     //struct Node *?????user_node = (struct Node*)malloc(sizeof(struct user));
     //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
@@ -183,7 +185,7 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
 
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
-    /* code for disconnect */
+    disconnect(username);
   } else if (strcmp(operation, "SEND\0") == 0) {
     /* code for send */
   } else {
@@ -226,4 +228,58 @@ void* process_request(void* s) {
   pthread_exit(0);
 
   return 0;
+}
+
+
+int disconnect(char* username){
+  //stop CONNECT thread 
+
+  Node* userNode = search(username);
+  /* If the user is not found inside the data structure */
+  if(userNode == NULL){
+    printf("s> DISCONNECT %s FAIL\n", username);
+    return 1;
+  }
+
+  /* If the user is connected */
+  if(userNode->data->status == 1){
+    userNode->data->status = 0;
+    //userNode->data->ip_address = 0;
+    userNode->data->port = 0;
+
+    /* Modify the user node on the data structure */
+    if(modify(userNode) < 0){
+      printf("s> DISCONNECT %s FAIL\n", username);
+      return 3;
+    }
+    printf("s> DISCONNECT %s OK\n", username);
+    return 0;
+  }
+  /* If the user is not connected */
+  if(userNode->data->status == 0){
+    printf("s> DISCONNECT %s FAIL\n", username);
+    return 2;
+  }
+  
+  /* Error case */
+  printf("s> DISCONNECT %s FAIL\n", username);
+  return 3;
+}
+
+int unregister(char* username){
+  /* Succesful unregister */
+  if(delete(username) == 0){
+    printf("s> UNREGISTER %s OK\n", username);
+    return 0;
+  }
+  /* ERROR: user is not found in the data structure */
+  else if(delete(username) == -1){
+    printf("s> UNREGISTER %s FAIL\n", username);
+    return 1;
+  }
+  /* ERROR: any other case */
+  else{
+    printf("s> UNREGISTER %s FAIL\n", username);
+    return 2;
+  }
 }

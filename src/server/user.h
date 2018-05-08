@@ -1,5 +1,5 @@
 #include <netinet/in.h>
-#include <queue.c>
+#include "queue.c"
 
 struct user {
     char username[256];
