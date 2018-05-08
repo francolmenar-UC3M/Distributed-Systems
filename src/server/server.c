@@ -15,7 +15,6 @@
 #include <errno.h>
 
 #include "dlinkedlist.c"
-#include "queue.c"
 #include "read_line.h"
 
 #define FALSE 0
@@ -97,10 +96,6 @@ int main(int argc, char* argv[]) {
 
       bzero((char *)&client, sizeof(struct sockaddr_in));
       client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
-<<<<<<< HEAD
-      printf("NEW %d\n", client_socket);
-=======
->>>>>>> c4eaa4f25f18a29430842482b25bc8996ea5e698
       pthread_create(&thr, &t_attr, &process_request, (void *)&client_socket);
 
       pthread_mutex_lock(&mutex_msg);
@@ -135,7 +130,7 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
       new_user->status = 0;
       new_user->ip_address = &client_addr->sin_addr;
       new_user->port = ntohs(client_addr->sin_port);
-      // queue* pending_messages;
+      new_user->pending_messages = ConstructQueue(10);
       // new_user->last_message;
 
       Node* new_node = getNewNode(new_user);
