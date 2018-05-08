@@ -15,7 +15,7 @@
 #include <errno.h>
 
 #include "dlinkedlist.c"
-#include "../../read_line.h"
+#include "read_line.h"
 
 #define FALSE 0
 #define TRUE 1
@@ -27,7 +27,7 @@ pthread_mutex_t mutex_msg;
 pthread_cond_t cond_msg;
 int sock_not_free = 1;
 
-int process_request(int* s);
+void* process_request(void* s);
 
 int main(int argc, char* argv[]) {
     char* server_ip;
@@ -36,7 +36,6 @@ int main(int argc, char* argv[]) {
     struct sockaddr_in server, client;
     struct ifreq ifr;
     socklen_t peer_addr_size = sizeof(struct sockaddr_in);
-    int val;
 
     // TODO: Check numeric input
     if (argc != 3 || strcmp(argv[1], "-p") != 0) {
@@ -47,6 +46,7 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // Open socket
 
+    int val;
     val = 1;
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(int));
 
@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
     }
 
     bzero((char *)&ifr, sizeof(struct ifreq));
-
     ifr.ifr_addr.sa_family = AF_INET; // Set family IPv4
     //snprintf(ifr.ifr_name, IFNAMSIZ, "eth0");
     snprintf(ifr.ifr_name, IFNAMSIZ, "lo"); // TODO: Default network interface
@@ -73,7 +72,7 @@ int main(int argc, char* argv[]) {
     server.sin_port = htons(server_port);
 
     if (bind(server_socket, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
-      fprintf(stderr, "%s%d\n", "ERROR binding failed");
+      fprintf(stderr, "%s\n", "ERROR binding failed");
       return -1;
     }
 
@@ -98,7 +97,7 @@ int main(int argc, char* argv[]) {
       bzero((char *)&client, sizeof(struct sockaddr_in));
       client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
 
-      pthread_create(&thr, &t_attr, (void *)process_request, (void *)&client_socket);
+      pthread_create(&thr, &t_attr, &process_request, (void *)&client_socket);
 
       pthread_mutex_lock(&mutex_msg);
       while(sock_not_free) {
@@ -112,8 +111,11 @@ int main(int argc, char* argv[]) {
 
 int process_data(struct sockaddr_in* client_addr, char* line) {
   char *operation;
+  char *username;
+
   operation = strtok(line, " ");
-  char *username = strtok(NULL, " ");
+  username = strtok(NULL, " ");
+
   if (operation == NULL || username == NULL) {
     printf("LAPUTA DE OROS\n");
     return -40;
@@ -151,29 +153,33 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
   return 0;
 }
 
-int process_request(int* s) {
+void* process_request(void* s) {
   int s_local;
+  int return_code;
+  int error;
+  socklen_t size;
   struct sockaddr_in local_client;
+  char *line_buffer;
 
   pthread_mutex_lock(&mutex_msg);
-  s_local = *s;
+  s_local = *(int*)s;
   sock_not_free = FALSE;
   pthread_cond_signal(&cond_msg);
   pthread_mutex_unlock(&mutex_msg);
 
-  int size = sizeof(struct sockaddr_in);
+  size = sizeof(struct sockaddr_in);
 
-  getpeername(s_local, (struct sockaddr * restrict)&local_client, &size);
+  getpeername(s_local, (struct sockaddr *)&local_client, &size);
 
-  char line[MAX_LINE+1];
-  bzero(&line, MAX_LINE);
-  if (readLine(s_local, line, MAX_LINE) == -1) {
+  line_buffer = (char *)malloc(sizeof(char)*(MAX_LINE+1));
+  bzero(&line_buffer, MAX_LINE);
+  if (readLine(s_local, line_buffer, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
-    int error = -2;
+    error = -2;
     pthread_exit(&error);
   }
 
-  int return_code = process_data(&local_client, line);
+  return_code = process_data(&local_client, line_buffer);
 
   send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
   // fprintf(stderr, "Sent code: %d\n", return_code);
