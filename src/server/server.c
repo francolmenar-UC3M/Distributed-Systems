@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
       bzero((char *)&client, sizeof(struct sockaddr_in));
       client_socket = accept(server_socket, (struct sockaddr *)&client, &peer_addr_size);
-
+printf("NEW %d\n", client_socket);
       pthread_create(&thr, &t_attr, &process_request, (void *)&client_socket);
 
       pthread_mutex_lock(&mutex_msg);
@@ -159,10 +159,10 @@ void* process_request(void* s) {
   int error;
   socklen_t size;
   struct sockaddr_in local_client;
-  char *line_buffer;
 
   pthread_mutex_lock(&mutex_msg);
   s_local = *(int*)s;
+  printf("PERO QUE POLLAS%d\n", s_local);
   sock_not_free = FALSE;
   pthread_cond_signal(&cond_msg);
   pthread_mutex_unlock(&mutex_msg);
@@ -171,7 +171,7 @@ void* process_request(void* s) {
 
   getpeername(s_local, (struct sockaddr *)&local_client, &size);
 
-  line_buffer = (char *)malloc(sizeof(char)*(MAX_LINE+1));
+  char line_buffer[MAX_LINE];
   bzero(&line_buffer, MAX_LINE);
   if (readLine(s_local, line_buffer, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
