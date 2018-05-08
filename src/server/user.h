@@ -1,10 +1,11 @@
 #include <netinet/in.h>
+#include <queue.c>
 
 struct user {
     char username[256];
     int status;
     struct in_addr* ip_address;
     int port;
-    // queue* pending_messages;
+    Queue* pending_messages;
     // int last_message;
 };
