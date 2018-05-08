@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.logging.SocketHandler;
@@ -30,7 +31,6 @@ class client {
     private static String idMessage = "-1"; // used for SEND
 
     private static int _port = -1;
-    private static int freePort = -1;
     private static Thread thread;
 
     private static final String REGISTER = "REGISTER";
@@ -228,10 +228,14 @@ class client {
      */
     static void connect(String user){
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
-        dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort), "NONE"), msg); // Perforrm the connection
-        thread = new Thread(new Connect_Runnable(_server,freePort));
-        //thread.start(); //Discomment when the server sends correctly the messages to the thread
-        freePort++; // Update the free port
+        try{
+            ServerSocket serverSocket = new ServerSocket(0); // socket to listen to the server
+            thread = new Thread(new Connect_Runnable(_server,serverSocket));
+            //thread.start(); //Discomment when the server sends correctly the messages to the thread
+            dealWithErrors(registerComunication(user, CONNECT,Integer.toString(serverSocket.getLocalPort()), "NONE"), msg); // Perforrm the connection
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -406,7 +410,6 @@ class client {
 		}
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
-        freePort = _port + 1; // free port
         shell();
     }
 

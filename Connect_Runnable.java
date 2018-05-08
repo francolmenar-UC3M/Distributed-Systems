@@ -5,16 +5,15 @@ public class Connect_Runnable implements Runnable {
     private static final int maxSize = 256;
 
     private static String server; // server IP address
-    private static int portNumber; // port number of the thread to listen to the server
+    private static ServerSocket serverSocket; // socket to listen to the server
 
-    public Connect_Runnable(String server, int portNumber){
+    public Connect_Runnable(String server, ServerSocket serverSocket){
         this.server = server;
-        this.portNumber = portNumber;
+        this.serverSocket = serverSocket;
     }
 
     public void run(){
         try {
-            ServerSocket serverSocket = new ServerSocket(portNumber); // socket to listen to the server
             Socket clientSocket = serverSocket.accept(); // accept the connection
             while(true){
                 DataInputStream input  = new DataInputStream(clientSocket.getInputStream()); // buffer reader
