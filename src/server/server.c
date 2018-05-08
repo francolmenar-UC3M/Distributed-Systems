@@ -151,12 +151,12 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
 
     //User does not exist
     if(user_node == NULL){
-      printf("CONNECT %s FAIL", username);
+      printf("CONNECT %s FAIL\n", username);
       return -1;
     }
     //User is already connected
     if(user_node->data->status != 0){
-      printf("CONNECT %s FAIL", username);
+      printf("CONNECT %s FAIL\n", username);
       return -2;
     }
     else{ //User is disconnected
@@ -179,10 +179,16 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
 
       //TODO: CHECK  PENDING MESSAGES
 
+      /*
+      if(search(username) == NULL){
+        printf("AQUI PETA CHAVALEEEEEEEEEEEEEEEEES\n");
+        return -1;
+      }
+      */
+
+      printf("CONNECT %s OK\n", username);
       return 0;
     }
-
-
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     disconnect(username);
@@ -235,16 +241,23 @@ int disconnect(char* username){
   //stop CONNECT thread 
 
   Node* userNode = search(username);
+
   /* If the user is not found inside the data structure */
   if(userNode == NULL){
     printf("s> DISCONNECT %s FAIL\n", username);
     return 1;
   }
 
+  /* If the user is not connected */
+  if(userNode->data->status == FALSE){
+    printf("s> DISCONNECT %s FAIL\n", username);
+    return 2;
+  }
+
   /* If the user is connected */
-  if(userNode->data->status == 1){
-    userNode->data->status = 0;
-    //userNode->data->ip_address = 0;
+  if(userNode->data->status == TRUE){
+    userNode->data->status = FALSE;
+    userNode->data->ip_address = NULL;
     userNode->data->port = 0;
 
     /* Modify the user node on the data structure */
@@ -254,11 +267,6 @@ int disconnect(char* username){
     }
     printf("s> DISCONNECT %s OK\n", username);
     return 0;
-  }
-  /* If the user is not connected */
-  if(userNode->data->status == 0){
-    printf("s> DISCONNECT %s FAIL\n", username);
-    return 2;
   }
   
   /* Error case */
