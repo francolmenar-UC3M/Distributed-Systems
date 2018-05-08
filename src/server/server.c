@@ -141,7 +141,47 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
     /* code for unregister */
   } else if (strcmp(operation, "CONNECT\0") == 0) {
-    /* code for connect */
+    //struct Node *?????user_node = (struct Node*)malloc(sizeof(struct user));
+    //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
+    printf("Entering CONNECT\n");
+
+    struct Node *user_node;
+    user_node = search(username);
+
+    //User does not exist
+    if(user_node == NULL){
+      printf("CONNECT %s FAIL", username);
+      return -1;
+    }
+    //User is already connected
+    if(user_node->data->status != 0){
+      printf("CONNECT %s FAIL", username);
+      return -2;
+    }
+    else{ //User is disconnected
+      printf("User connecting\n");
+
+      struct user *data_connected = (struct user*) malloc(sizeof(struct user));
+      strcpy(data_connected->username, username);
+      data_connected->status = TRUE;
+      data_connected->ip_address = &client_addr->sin_addr;
+      data_connected->port = ntohs(client_addr->sin_port);
+
+      printf("Creating updated node\n");
+      //Create and update user node (now connected)
+      struct Node *user_connected = getNewNode(data_connected);
+      printf("Updating node\n");
+      modify(user_connected);
+
+      free(data_connected);
+      
+      //TODO: CHECK  PENDING MESSAGES
+
+      return 0;
+    }
+
+
+
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     /* code for disconnect */
   } else if (strcmp(operation, "SEND\0") == 0) {
