@@ -15,7 +15,8 @@ int main(int argc , char *argv[]){ /*argv[1] is the server*/
   int sock;
   struct sockaddr_in server;
 	struct hostent *hp;
-  char buffer[MAX_LINE], *res;
+  char buffer[MAX_LINE];
+  int res;
   int n, confirmation, length;
 
 	if(argc != 2){ /*checks that there is a server name as input*/
@@ -52,22 +53,22 @@ int main(int argc , char *argv[]){ /*argv[1] is the server*/
       printf("Error reading\n");
       return -1;
     }
-    length = htons(n); /*store the length of the message*/
-    printf("Length of the message sent to the server\n");
-    if( send(sock , (char *) &length, sizeof(int), 0) < 0){ /*send the length if the string*/
-      printf("Send failed\n");
-      return 1;
-    }
-
-    printf("Confirmation arrived\n");
-    if( recv(sock , &confirmation , sizeof(int) , 0) < 0){ /*Receive the received confirmation from the server*/
-      printf("recv failed\n");
-      return 1;
-    }
-    if(confirmation < 0){ /*check that the confirmation is the expected one*/
-      printf("confirmation failed\n");
-      return 1;
-    }
+    // length = htons(n); /*store the length of the message*/
+    // printf("Length of the message sent to the server\n");
+    // if( send(sock , (char *) &length, sizeof(int), 0) < 0){ /*send the length if the string*/
+    //   printf("Send failed\n");
+    //   return 1;
+    // }
+    //
+    // printf("Confirmation arrived\n");
+    // if( recv(sock , &confirmation , sizeof(int) , 0) < 0){ /*Receive the received confirmation from the server*/
+    //   printf("recv failed\n");
+    //   return 1;
+    // }
+    // if(confirmation < 0){ /*check that the confirmation is the expected one*/
+    //   printf("confirmation failed\n");
+    //   return 1;
+    // }
 
     // if( send(sock , (char *) buffer, sizeof(char) * n, 0) < 0){ /*send the string read*/
     //   printf("Send failed\n");
@@ -75,15 +76,16 @@ int main(int argc , char *argv[]){ /*argv[1] is the server*/
     // }
     // res = (char *) malloc(sizeof(char) + sizeof(char) * n); /*allocate the memory to the response string*/
     // res[n] = '\0';
-    if( send_msg(sock , (char *) buffer, n )< 0){ /*send the string read*/
+    if( send_msg(sock , (char *) buffer, MAX_LINE )< 0){ /*send the string read*/
         printf("Send failed\n");
         return 1;
       }
-    if( recv_msg(sock ,(char *) res , n) < 0){ /*Receive a reply from the server*/
+      bzero(&res, sizeof(res));
+    if( recv(sock , &res , sizeof(int), 0) < 0){ /*Receive a reply from the server*/
       printf("recv failed\n");
       return 1;
     }
-    printf("Server reply : %s\n", res);
+    printf("Server reply : %d\n", res);
 
   if(close(sock) < 0){ /*close the client socket*/
     perror("error closing the socket");

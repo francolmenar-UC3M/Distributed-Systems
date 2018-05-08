@@ -21,6 +21,7 @@
 #define TRUE 1
 
 #define LISTEN_BACKLOG 50
+#define MAX_LINE 256
 
 pthread_mutex_t mutex_msg;
 pthread_cond_t cond_msg;
@@ -109,14 +110,22 @@ int main(int argc, char* argv[]) {
     }
 }
 
-int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
+int process_data(struct sockaddr_in* client_addr, char* line) {
+  char *operation;
+  operation = strtok(line, " ");
+  char *username = strtok(NULL, " ");
+  if (operation == NULL || username == NULL) {
+    printf("LAPUTA DE OROS\n");
+    return -40;
+  }
+
   if (strcmp(operation, "REGISTER\0") == 0) {
-    if (search(args) != NULL) {
-      printf("s> REGISTER %s FAIL\n", args);
+    if (search(username) != NULL) {
+      printf("s> REGISTER %s FAIL\n", username);
       return -1;
     } else {
       struct user *new_user = (struct user*)malloc(sizeof(struct user));
-      strcpy(new_user->username, args);
+      strcpy(new_user->username, username);
       new_user->status = 0;
       new_user->ip_address = &client_addr->sin_addr;
       new_user->port = ntohs(client_addr->sin_port);
@@ -125,8 +134,7 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
 
       Node* new_node = getNewNode(new_user);
       insert(new_node);
-      printList();
-      printf("s> REGISTER tu mama OK\n");
+      printf("s> REGISTER %s OK\n", username);
     }
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
     /* code for unregister */
@@ -137,7 +145,7 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* args) {
   } else if (strcmp(operation, "SEND\0") == 0) {
     /* code for send */
   } else {
-    fprintf(stderr, "ERROR TU PUTA MADRE: %s\n", args);
+    fprintf(stderr, "s> ERROR MESSAGE FORMAT");
     return -2;
   }
   return 0;
@@ -157,26 +165,18 @@ int process_request(int* s) {
 
   getpeername(s_local, (struct sockaddr * restrict)&local_client, &size);
 
-  char operation[24];
-  char args[256];
-  bzero(&operation, sizeof(operation));
-  if (readLine(s_local, operation, sizeof(operation)) == -1) {
+  char line[MAX_LINE+1];
+  bzero(&line, MAX_LINE);
+  if (readLine(s_local, line, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
     int error = -2;
     pthread_exit(&error);
   }
 
-  bzero(&args, sizeof(args));
-  if (readLine(s_local, operation, sizeof(args)) == -1) {
-    fprintf(stderr, "ERROR reading line\n");
-    int error = -2;
-    pthread_exit(&error);
-  }
-
-  int return_code = process_data(&local_client, operation, args);
+  int return_code = process_data(&local_client, line);
 
   send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
-  fprintf(stderr, "Sent code: %d\n", return_code);
+  // fprintf(stderr, "Sent code: %d\n", return_code);
   close(s_local);
   pthread_exit(0);
 
