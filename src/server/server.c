@@ -23,6 +23,7 @@
 #define LISTEN_BACKLOG 50
 #define MAX_LINE 256
 
+
 pthread_mutex_t mutex_msg;
 pthread_cond_t cond_msg;
 int sock_not_free = 1;
@@ -30,6 +31,7 @@ int sock_not_free = 1;
 void* process_request(void* s);
 int disconnect(char* username);
 int unregister(char* username);
+int send(char* sender, char* receiver, char* message);
 
 int main(int argc, char* argv[]) {
     char* server_ip;
@@ -193,7 +195,8 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     disconnect(username);
   } else if (strcmp(operation, "SEND\0") == 0) {
-    /* code for send */
+
+    send(username, receiver, message);
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
     return -2;
@@ -290,4 +293,31 @@ int unregister(char* username){
     printf("s> UNREGISTER %s FAIL\n", username);
     return 2;
   }
+}
+
+int send(char* sender, char* receiver, char* message){
+
+  /* The message exceeds the maximum size */
+  if((strlen(message)+1) > MAX_LINE){
+    return 2;
+  }
+
+  Node* senderNode = search(sender);
+  Node* receiverNode = search(receiver);
+
+  /* If one of the users is not found inside the data structure */
+  if((senderNode == NULL) || (receiverNode == NULL)){
+    return 1;
+  }
+
+  /* If the user is connected */
+  if((senderNode->data->status == FALSE) || (receiverNode->data->status == FALSE)){
+    return 2;
+  }
+
+  //store pending message in the queue
+
+  
+
+  return 0;
 }
