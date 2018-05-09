@@ -29,6 +29,7 @@ class client {
     private static String userName = null; // user register in the system
     private static String idMessage = "-1"; // used for SEND
 
+    private static ServerSocket javaServerPort = null;
     private static int _port = -1;
     private static Connect_Thread thread;
 
@@ -200,10 +201,10 @@ class client {
     private static void connect(String user){
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
         try{
-            ServerSocket serverSocket = new ServerSocket(0); // socket to listen to the server
-            thread = new Connect_Thread(_server,serverSocket);
-            // thread.start();
-            if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(serverSocket.getLocalPort()), "NONE"), msg)) == RC.OK){ userName = user;} // Connect the user
+            javaServerPort = new ServerSocket(0); // socket to listen to the server
+            thread = new Connect_Thread(_server,javaServerPort);
+            thread.start();
+            if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(javaServerPort.getLocalPort()), "NONE"), msg)) == RC.OK){ userName = user;} // Connect the user
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -217,7 +218,12 @@ class client {
     private static void disconnect(String user){
         String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
         dealWithErrors(registerCommunication(user, DISCONNECT, "-1", "NONE"), msg); // Perform the connection
-       // thread.interrupt();
+        thread.interrupt();
+        try {
+            javaServerPort.close();
+        } catch (IOException e) {
+            return;
+        }
     }
 
     /**

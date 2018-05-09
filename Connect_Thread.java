@@ -16,8 +16,8 @@ public class Connect_Thread extends Thread {
 
     public void run(){
         try {
+            Socket clientSocket = serverSocket.accept(); // accept the connection CREO QUE ESTO PETA
             while(!interrupted()){
-                Socket clientSocket = serverSocket.accept(); // accept the connection CREO QUE ESTO PETA
 
                 DataInputStream input  = new DataInputStream(clientSocket.getInputStream()); // buffer reader
 
@@ -29,7 +29,7 @@ public class Connect_Thread extends Thread {
                 System.out.print("Message received: " + msg);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            return;
         }
     }
 }
