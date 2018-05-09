@@ -177,7 +177,7 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
       printf("Updating node\n");
       modify(user_connected);
 
-      free(data_connected);
+      //free(data_connected);
 
       //TODO: CHECK  PENDING MESSAGES
 
