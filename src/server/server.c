@@ -179,11 +179,15 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
       printf("Updating node\n");
       modify(user_connected);
 
-      //free(data_connected);
-
-      //TODO: CHECK  PENDING MESSAGES   
-
       printf("CONNECT %s OK\n", username);
+
+      //TODO: CHECK  PENDING MESSAGES
+      printf("CHECKING PENDING MESSAGES\n");
+
+      //while(isEmpty(user_connected->data->pending_messages) != 1){
+        //send_message()
+      //}
+
       return 0;
     }
 
@@ -239,7 +243,7 @@ void* process_request(void* s) {
 
 
 int disconnect(char* username){
-  //stop CONNECT thread 
+  //stop CONNECT thread
 
   Node* userNode = search(username);
 
@@ -269,7 +273,7 @@ int disconnect(char* username){
     printf("s> DISCONNECT %s OK\n", username);
     return 0;
   }
-  
+
   /* Error case */
   printf("s> DISCONNECT %s FAIL\n", username);
   return 3;
@@ -336,8 +340,8 @@ int send_message(char* sender, char* receiver, char* message){
   printf("Sender: %s\n", receiver_message->data.mes->from_user);
   printf("Sender: %s\n", receiver_message->data.mes->to_user);
   printf("Sender: %s\n", receiver_message->data.mes->text);
-  
-  
+
+
   /* Put the message in the message queue */
   Enqueue(search(receiver)->data->pending_messages, receiver_message);
 
@@ -351,11 +355,9 @@ int send_message(char* sender, char* receiver, char* message){
     return 0;
   }
 
-  //The message is sent to the IP: port indicated in the user input. 
+  //The message is sent to the IP: port indicated in the user input.
   //The message is sent indicating the corresponding identifier.
   //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
 
   return 0;
 }
-
-
