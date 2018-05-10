@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include "message.h"
 #include <netdb.h>
+#include <limits.h>
 
 #include <unistd.h>
 #include <string.h>
@@ -27,11 +28,12 @@
 pthread_mutex_t mutex_msg;
 pthread_cond_t cond_msg;
 int sock_not_free = 1;
+int message_id = 0;
 
 void* process_request(void* s);
 int disconnect(char* username);
 int unregister(char* username);
-int send(char* sender, char* receiver, char* message);
+int send_message(char* sender, char* receiver, char* message);
 
 int main(int argc, char* argv[]) {
     char* server_ip;
@@ -179,14 +181,7 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
 
       //free(data_connected);
 
-      //TODO: CHECK  PENDING MESSAGES
-
-      /*
-      if(search(username) == NULL){
-        printf("AQUI PETA CHAVALEEEEEEEEEEEEEEEEES\n");
-        return -1;
-      }
-      */
+      //TODO: CHECK  PENDING MESSAGES   
 
       printf("CONNECT %s OK\n", username);
       return 0;
@@ -195,8 +190,10 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     disconnect(username);
   } else if (strcmp(operation, "SEND\0") == 0) {
-
-    send(username, receiver, message);
+    //assign receiver
+    //assign message
+    //send_message(username, receiver, message);
+    send_message("guille", "ale", "Te quiero mucho");
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
     return -2;
@@ -233,6 +230,7 @@ void* process_request(void* s) {
 
   send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
   // fprintf(stderr, "Sent code: %d\n", return_code);
+  // if (strcmp(operation, "SEND\0") == 0){ send(s_local, &message_id, sizeof(int), MSG_NOSIGNAL); }
   close(s_local);
   pthread_exit(0);
 
@@ -295,13 +293,15 @@ int unregister(char* username){
   }
 }
 
-int send(char* sender, char* receiver, char* message){
+
+int send_message(char* sender, char* receiver, char* message){
 
   /* The message exceeds the maximum size */
   if((strlen(message)+1) > MAX_LINE){
     return 2;
   }
 
+  /* Find the two users inside the list */
   Node* senderNode = search(sender);
   Node* receiverNode = search(receiver);
 
@@ -310,14 +310,52 @@ int send(char* sender, char* receiver, char* message){
     return 1;
   }
 
-  /* If the user is connected */
-  if((senderNode->data->status == FALSE) || (receiverNode->data->status == FALSE)){
+  /* If the sender is disconnected */
+  if(senderNode->data->status == FALSE){
     return 2;
   }
+  printf("gdfhj,hfds\n");
 
-  //store pending message in the queue
+  senderNode->data->last_message++;
+  NODE *receiver_message = malloc(sizeof(NODE));
 
+  receiver_message->data.mes = (struct message*)malloc(sizeof(struct message));
+  receiver_message->data.mes->id = message_id;
+  message_id++;
+
+
+  /* If we exceed the maximum size for an unsigned int*/
+  if(message_id > UINT_MAX){
+    message_id = 0;
+  }
+
+  strcpy(receiver_message->data.mes->from_user, sender);
+  strcpy(receiver_message->data.mes->to_user, receiver);
+  strcpy(receiver_message->data.mes->text, message);
+
+  printf("Sender: %s\n", receiver_message->data.mes->from_user);
+  printf("Sender: %s\n", receiver_message->data.mes->to_user);
+  printf("Sender: %s\n", receiver_message->data.mes->text);
   
+  
+  /* Put the message in the message queue */
+  Enqueue(search(receiver)->data->pending_messages, receiver_message);
+
+
+
+  printf("SEND MESSAGE %d FROM %s TO %s\n", message_id, sender, receiver);
+
+  /* If the receiver is disconnected */
+  if(receiverNode->data->status == FALSE){
+    printf("MESSAGE %d FROM %s TO %s STORED\n", message_id, sender, receiver);
+    return 0;
+  }
+
+  //The message is sent to the IP: port indicated in the user input. 
+  //The message is sent indicating the corresponding identifier.
+  //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
 
   return 0;
 }
+
+

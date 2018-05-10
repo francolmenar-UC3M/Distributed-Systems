@@ -11,8 +11,8 @@ typedef struct {
 } DATA;
 
 typedef struct Node_t {
-    DATA data;
-    struct Node_t *prev;
+   DATA data;
+   struct Node_t *prev;
 } NODE;
 
 /* the HEAD of the Queue, hold the amount of node's that are in the queue*/
