@@ -39,11 +39,6 @@ class client {
     private static final String DISCONNECT = "DISCONNECT";
     private static final String SEND = "SEND";
 
-    private static final int maxSize = 256;
-
-
-
-
     /* ******************** METHODS ******************* */
 
     /**
