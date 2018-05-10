@@ -232,11 +232,7 @@ class client {
      */
     private static void register(String user){
         if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
-
-        if(user == null){
-            System.out.println("Values of register equal null");
-            return;
-        }
+        
         String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
         dealWithErrors(registerCommunication(user, REGISTER,"-1", "NONE"), msg); // Register the new user
     }
@@ -249,10 +245,6 @@ class client {
     private static void unregister(String user){
         if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
 
-        if(user == null){
-            System.out.println("Values of unregister equal null");
-            return;
-        }
         String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
         RC result = dealWithErrors(registerCommunication(user, UNREGISTER,"-1", "NONE"), msg); // Perform the unregistration
         if(result == RC.OK || result == RC.FAIL){ userName = null;} // set the register user to null
