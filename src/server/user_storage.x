@@ -6,6 +6,6 @@ program USERSTORAGE {
     int get_user(struct user* usr)          = 4;
     int add_message(struct message msg)     = 5;
     int get_total_messages(char* username)  = 6;
-    int get_message(char* username, unsigned int msg_id, ) = 7; // TODO: AQUI HAY QUE METER MD5
+    int get_message(char* username, unsigned int msg_id, char* md5) = 7; // TODO: AQUI HAY QUE METER MD5
   } = 1;
 } = 98;
