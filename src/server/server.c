@@ -179,11 +179,12 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* argumen
       printf("Updating node\n");
       modify(user_connected);
 
-      //free(data_connected);
-
-      //TODO: CHECK  PENDING MESSAGES
-
       printf("CONNECT %s OK\n", argument1);
+      printf("CHECKING PENDING MESSAGES\n");
+
+      //while(isEmpty(user_connected->data->pending_messages) != 1){
+        //send_message()
+      //}
       return 0;
     }
 
