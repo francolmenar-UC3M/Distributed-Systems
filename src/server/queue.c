@@ -118,16 +118,16 @@ NODE * Dequeue(Queue *pQueue) {
 }
 
 int isEmpty(Queue* pQueue) {
-    pthread_mutex_lock(&lock);
+    // pthread_mutex_lock(&lock);
     if (pQueue == NULL) {
-        pthread_mutex_unlock(&lock);
+        // pthread_mutex_unlock(&lock);
         return FALSE;
     }
     if (pQueue->size == 0) {
-        pthread_mutex_unlock(&lock);
+        // pthread_mutex_unlock(&lock);
         return TRUE;
     } else {
-        pthread_mutex_unlock(&lock);
+        // pthread_mutex_unlock(&lock);
         return FALSE;
     }
 
