@@ -114,60 +114,60 @@ int main(int argc, char* argv[]) {
     }
 }
 
-int process_data(struct sockaddr_in* client_addr, char* line) {
-  char *operation;
-  char *username;
+int register_user(struct sockaddr_in* client_addr, char *username) {
+  if (search(username) != NULL) {
+    printf("s> REGISTER %s FAIL\n", username);
+    return -1;
+  } else {
+    struct user *new_user = (struct user*)malloc(sizeof(struct user));
+    strcpy(new_user->username, username);
+    new_user->status = 0;
+    new_user->ip_address = &client_addr->sin_addr;
+    new_user->port = ntohs(client_addr->sin_port);
+    new_user->pending_messages = ConstructQueue(10);
+    // new_user->last_message;
 
-  operation = strtok(line, " ");
-  username = strtok(NULL, " ");
+    Node* new_node = getNewNode(new_user);
+    insert(new_node);
+    printf("s> REGISTER %s OK\n", username);
+  }
+  return 0;
+}
 
-  if (operation == NULL || username == NULL) {
-    printf("LAPUTA DE OROS\n");
-    return -40;
+int process_data(struct sockaddr_in* client_addr, char* operation, char* argument1, char* argument2) {
+
+  if (operation == NULL || argument1 == NULL) {
+    printf("s> ERROR MESSAGE FORMAT\n");
+    return -2;
   }
 
   if (strcmp(operation, "REGISTER\0") == 0) {
-    if (search(username) != NULL) {
-      printf("s> REGISTER %s FAIL\n", username);
-      return -1;
-    } else {
-      struct user *new_user = (struct user*)malloc(sizeof(struct user));
-      strcpy(new_user->username, username);
-      new_user->status = 0;
-      new_user->ip_address = &client_addr->sin_addr;
-      new_user->port = ntohs(client_addr->sin_port);
-      new_user->pending_messages = ConstructQueue(10);
-      // new_user->last_message;
-
-      Node* new_node = getNewNode(new_user);
-      insert(new_node);
-      printf("s> REGISTER %s OK\n", username);
-    }
+    return register_user(client_addr, argument1);
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
-    unregister(username);
+    return unregister(argument1);
   } else if (strcmp(operation, "CONNECT\0") == 0) {
     //struct Node *?????user_node = (struct Node*)malloc(sizeof(struct user));
     //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
     printf("Entering CONNECT\n");
 
     struct Node *user_node;
-    user_node = search(username);
+    user_node = search(argument1);
 
     //User does not exist
     if(user_node == NULL){
-      printf("CONNECT %s FAIL\n", username);
+      printf("CONNECT %s FAIL\n", argument1);
       return -1;
     }
     //User is already connected
     if(user_node->data->status != 0){
-      printf("CONNECT %s FAIL\n", username);
+      printf("CONNECT %s FAIL\n", argument1);
       return -2;
     }
     else{ //User is disconnected
       printf("User connecting\n");
 
       struct user *data_connected = (struct user*) malloc(sizeof(struct user));
-      strcpy(data_connected->username, username);
+      strcpy(data_connected->username, argument1);
       data_connected->status = TRUE;
       data_connected->ip_address = &client_addr->sin_addr;
       data_connected->port = ntohs(client_addr->sin_port);
@@ -181,19 +181,19 @@ int process_data(struct sockaddr_in* client_addr, char* line) {
 
       //free(data_connected);
 
-      //TODO: CHECK  PENDING MESSAGES   
+      //TODO: CHECK  PENDING MESSAGES
 
-      printf("CONNECT %s OK\n", username);
+      printf("CONNECT %s OK\n", argument1);
       return 0;
     }
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
-    disconnect(username);
+    return disconnect(argument1);
   } else if (strcmp(operation, "SEND\0") == 0) {
     //assign receiver
     //assign message
     //send_message(username, receiver, message);
-    send_message("guille", "ale", "Te quiero mucho");
+    return send_message("guille", "ale", "Te quiero mucho");
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
     return -2;
@@ -218,19 +218,33 @@ void* process_request(void* s) {
 
   getpeername(s_local, (struct sockaddr *)&local_client, &size);
 
-  char line_buffer[MAX_LINE];
-  bzero(&line_buffer, MAX_LINE);
-  if (readLine(s_local, line_buffer, MAX_LINE) == -1) {
+  char operation[MAX_LINE];
+  bzero(operation, MAX_LINE);
+  if (readLine(s_local, operation, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
     error = -2;
     pthread_exit(&error);
   }
 
-  return_code = process_data(&local_client, line_buffer);
+  char argument1[MAX_LINE];
+  char argument2[MAX_LINE];
+
+  if (readLine(s_local, argument1, MAX_LINE) == -1) {
+    fprintf(stderr, "ERROR reading line\n");
+    error = -2;
+    pthread_exit(&error);
+  }
+
+  if (readLine(s_local, argument2, MAX_LINE) == -1) {
+    fprintf(stderr, "ERROR reading line\n");
+    error = -2;
+    pthread_exit(&error);
+  }
+
+  return_code = process_data(&local_client, operation, argument1, argument2);
 
   send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
   // fprintf(stderr, "Sent code: %d\n", return_code);
-  // if (strcmp(operation, "SEND\0") == 0){ send(s_local, &message_id, sizeof(int), MSG_NOSIGNAL); }
   close(s_local);
   pthread_exit(0);
 
@@ -239,7 +253,7 @@ void* process_request(void* s) {
 
 
 int disconnect(char* username){
-  //stop CONNECT thread 
+  //stop CONNECT thread
 
   Node* userNode = search(username);
 
@@ -269,7 +283,7 @@ int disconnect(char* username){
     printf("s> DISCONNECT %s OK\n", username);
     return 0;
   }
-  
+
   /* Error case */
   printf("s> DISCONNECT %s FAIL\n", username);
   return 3;
@@ -336,8 +350,8 @@ int send_message(char* sender, char* receiver, char* message){
   printf("Sender: %s\n", receiver_message->data.mes->from_user);
   printf("Sender: %s\n", receiver_message->data.mes->to_user);
   printf("Sender: %s\n", receiver_message->data.mes->text);
-  
-  
+
+
   /* Put the message in the message queue */
   Enqueue(search(receiver)->data->pending_messages, receiver_message);
 
@@ -351,11 +365,9 @@ int send_message(char* sender, char* receiver, char* message){
     return 0;
   }
 
-  //The message is sent to the IP: port indicated in the user input. 
+  //The message is sent to the IP: port indicated in the user input.
   //The message is sent indicating the corresponding identifier.
   //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
 
   return 0;
 }
-
-
