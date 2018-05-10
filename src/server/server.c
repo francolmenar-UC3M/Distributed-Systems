@@ -153,8 +153,10 @@ int process_data(int s_local, char* operation) {
     size = sizeof(struct sockaddr_in);
     getpeername(s_local, (struct sockaddr *)&client_addr, &size);
     return register_user(&client_addr, argument1);
+
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
     return unregister(argument1);
+
   } else if (strcmp(operation, "CONNECT\0") == 0) {
     //struct Node *?????user_node = (struct Node*)malloc(sizeof(struct user));
     //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
@@ -197,9 +199,12 @@ int process_data(int s_local, char* operation) {
       printf("CONNECT %s OK\n", argument1);
       printf("CHECKING PENDING MESSAGES\n");
 
-      //while(isEmpty(user_connected->data->pending_messages) != 1){
-        //send_message()
-      //}
+      while(isEmpty(user_connected->data->pending_messages) != 1){
+        printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
+        NODE *queue_message = Dequeue(user_connected->data->pending_messages);
+        send_msg(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+        printf("MESSAGE SENT\n");
+      }
       return 0;
     }
 
@@ -309,64 +314,66 @@ int unregister(char* username){
 
 int send_message(char* sender, char* receiver, char* message){
 
-  /* The message exceeds the maximum size */
-  if((strlen(message)+1) > MAX_LINE){
-    return 2;
-  }
+    /* The message exceeds the maximum size */
+    if((strlen(message)+1) > MAX_LINE){
+      return 2;
+    }
 
-  /* Find the two users inside the list */
-  Node* senderNode = search(sender);
-  Node* receiverNode = search(receiver);
+    /* Find the two users inside the list */
+    Node* senderNode = search(sender);
+    Node* receiverNode = search(receiver);
 
-  /* If one of the users is not found inside the data structure */
-  if((senderNode == NULL) || (receiverNode == NULL)){
-    return 1;
-  }
+    /* If one of the users is not found inside the data structure */
+    if((senderNode == NULL) || (receiverNode == NULL)){
+      return 1;
+    }
 
-  /* If the sender is disconnected */
-  if(senderNode->data->status == FALSE){
-    return 2;
-  }
-  printf("gdfhj,hfds\n");
+    /* If the sender is disconnected */
+    if(senderNode->data->status == FALSE){
+      return 2;
+    }
 
-  senderNode->data->last_message++;
-  NODE *receiver_message = malloc(sizeof(NODE));
+    senderNode->data->last_message++; //!
+    NODE *receiver_message = malloc(sizeof(NODE));
 
-  receiver_message->data.mes = (struct message*)malloc(sizeof(struct message));
-  receiver_message->data.mes->id = message_id;
-  message_id++;
+    receiver_message->data.mes = (struct message*)malloc(sizeof(struct message));
 
+    receiver_message->data.mes->id = message_id;
+    message_id++;
+    /* If we exceed the maximum size for an unsigned int*/
+    if(message_id > UINT_MAX){
+      message_id = 0;
+    }
 
-  /* If we exceed the maximum size for an unsigned int*/
-  if(message_id > UINT_MAX){
-    message_id = 0;
-  }
+    strcpy(receiver_message->data.mes->from_user, sender);
+    strcpy(receiver_message->data.mes->to_user, receiver);
+    strcpy(receiver_message->data.mes->text, message);
 
-  strcpy(receiver_message->data.mes->from_user, sender);
-  strcpy(receiver_message->data.mes->to_user, receiver);
-  strcpy(receiver_message->data.mes->text, message);
-
-  printf("Sender: %s\n", receiver_message->data.mes->from_user);
-  printf("Sender: %s\n", receiver_message->data.mes->to_user);
-  printf("Sender: %s\n", receiver_message->data.mes->text);
+    printf("Sender from: %s\n", receiver_message->data.mes->from_user);
+    printf("Sender to: %s\n", receiver_message->data.mes->to_user);
+    printf("Sender mes: %s\n", receiver_message->data.mes->text);
 
 
-  /* Put the message in the message queue */
-  Enqueue(search(receiver)->data->pending_messages, receiver_message);
+    /* Put the message in the message queue */
+    Enqueue(search(receiver)->data->pending_messages, receiver_message);
+
+    /* If the receiver is disconnected */
+    if(receiverNode->data->status == FALSE){
+      printf("MESSAGE %d FROM %s TO %s STORED\n", message_id, sender, receiver);
+      return 0;
+    }
+    else{
+      receiver_message = Dequeue(search(receiver)->data->pending_messages);
+      send_msg(receiverNode->data->port, receiver_message->data.mes->text, MAX_LINE);
+      printf("SEND MESSAGE %d FROM %s TO %s\n", message_id, sender, receiver);
+    }
 
 
+    //The message is sent to the IP: port indicated in the user input.
 
-  printf("SEND MESSAGE %d FROM %s TO %s\n", message_id, sender, receiver);
+    //The message is sent indicating the corresponding identifier.
 
-  /* If the receiver is disconnected */
-  if(receiverNode->data->status == FALSE){
-    printf("MESSAGE %d FROM %s TO %s STORED\n", message_id, sender, receiver);
+    //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
+
     return 0;
-  }
-
-  //The message is sent to the IP: port indicated in the user input.
-  //The message is sent indicating the corresponding identifier.
-  //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
-
-  return 0;
 }
