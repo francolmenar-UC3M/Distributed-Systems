@@ -18,15 +18,28 @@ class client {
     private static enum RC {
         OK,
         ERROR,
-        USER_ERROR
+        USER_ERROR,
+        FAIL,
+        SWITCH_ERROR // to check if the server sends a byte different to the expected ones
     };
 
     /******************* ATTRIBUTES *******************/
 
     private static String _server   = null;
+    private static String idMessage = "-1"; // used for SEND
     private static int _port = -1;
+    private static int freePort = -1;
+    private static Thread thread;
 
     private static final String REGISTER = "REGISTER";
+    private static final String UNREGISTER = "UNREGISTER";
+    private static final String CONNECT = "CONNECT";
+    private static final String DISCONNECT = "DISCONNECT";
+    private static final String SEND = "SEND";
+
+    private static final int maxSize = 256;
+
+
 
 
     /********************* METHODS ********************/
@@ -53,21 +66,24 @@ class client {
         }
     }
 
-    /**
-     * Send an string and the operation to be performed to the server by the given port
-     *
-     * @param operation: the operation to be done in the server
-     * @param msg: String to be sent
-     */
-    private static void sendString(Socket socket, String operation, String msg) {
+
+    private static String receiveString(Socket socket) {
+        return "-1";
+    }
+
+
+        /**
+         * @brief Send an string to the server
+         *
+         * @param operation: the operation to be done in the server
+         * @param msg: String to be sent
+         */
+    private static void sendString(Socket socket, String msg) {
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
 
-            outputObject.write(operation.getBytes());
-            outputObject.write('\0');
             outputObject.write(msg.getBytes());
             outputObject.write('\0');
-
         }  catch (IOException e) {
             System.out.println("IO exception");
             e.printStackTrace();
@@ -101,80 +117,123 @@ class client {
     }
 
     /**
-     * @param user - User name to register in the system
+     * @brief Perform a basic comunication sending the username and the operation to be executed in the server
+     *
+     * @param user: User name to register in the system
+     * @param operation: The name of the operation to perform (register,...)
+     * @param port: the port sent to the server in some operations, such as connect
+     * @param message: the message to be sent to a user
      *
      * @return OK if successful
-     * @return USER_ERROR if the user is already registered
+     * @return USER_ERROR in case of any error related to the user
      * @return ERROR if another error occurred
      */
-    static RC register(String user)
-    {
+    static RC registerComunication(String user, String operation, String port, String message){
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
-            sendString(socket, REGISTER, user); // send the message to the server
+            sendString(socket, operation); // send the operation to the server
+            sendString(socket, user); // send the username to the server
+
+            if(operation == CONNECT){ sendString(socket, port); } // send the port to the server if it is a valid operation for it
+            else if(operation == SEND){ sendString(socket, message);} // If the operation is a SEND, the message is sent too
+
             Byte result = receiveByte(socket); // get the response byte
-            System.out.println("Byte: " + result);
+            if(operation == SEND && result == 0x00) { idMessage = receiveString(socket);} // get the id associated to the message sent (only in SENT)
             socket.close(); // close the socket
+
             switch (result){ // check the error byte of the server
                 case 0x00:
-                    System.out.println("Success");
                     return RC.OK;
                 case 0x01:
-                    System.out.println("User error");
                     return RC.USER_ERROR;
                 case 0x02:
-                    System.out.println("Error");
                     return RC.ERROR;
+                case 0x03:
+                    return RC.FAIL;
                 default:
-                    System.out.println("Nunca tiene que salir esto");
-                    return RC.ERROR;
+                    return RC.SWITCH_ERROR;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return RC.ERROR;
+
+        if (operation == CONNECT  || DISCONNECT == UNREGISTER) {return RC.FAIL;}
+        else {return RC.ERROR;}
     }
 
     /**
+     * @brief Deal with the errors of the operation's execution
+     *
+     * @param error: the return value of the execution of an operation
+     * @param msg: Array of error messages to print
+     */
+    static void dealWithErrors(RC error, String [] msg){
+        switch(error){
+            case OK:
+                System.out.println(msg[0]);
+                break;
+            case USER_ERROR:
+                System.out.println(msg[1]);
+                break;
+            case ERROR:
+                System.out.println(msg[2]);
+                break;
+            case FAIL:
+                System.out.println(msg[3]);
+                break;
+            default:
+                System.out.println("DEFAULT CASE (IT SHOULD NEVER ARRIVED HERE)");
+                break;
+        }
+    }
+
+    /**
+     * @brief Send the register request to the server
+     *
+     * @param user - User name to register in the system
+     */
+    static void register(String user){
+        String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
+        dealWithErrors(registerComunication(user, REGISTER,"-1", "NONE"), msg); // Perform the registration
+    }
+
+    /**
+     * @brief Send the unregister request to the server
+     *
      * @param user - User name to unregister from the system
-     *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist
-     * @return ERROR if another error occurred
      */
-    static RC unregister(String user)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void unregister(String user){
+        String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
+        dealWithErrors(registerComunication(user, UNREGISTER,"-1", "NONE"), msg); // Perforrm the unregistration
     }
 
     /**
+     * @brief Send the connect request to the server
+     *
      * @param user - User name to connect to the system
-     *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist or if it is already connected
-     * @return ERROR if another error occurred
      */
-    static RC connect(String user)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void connect(String user){
+        String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
+        dealWithErrors(registerComunication(user, CONNECT,Integer.toString(freePort), "NONE"), msg); // Perforrm the connection
+        thread = new Thread(new Connect_Runnable(_server,freePort));
+        //thread.start(); //Discomment when the server sends correctly the messages to the thread
+        freePort++; // Update the free port
     }
 
     /**
+     * @brief Disconnect an user
+     *
      * @param user - User name to disconnect from the system
-     *
-     * @return OK if successful
-     * @return USER_ERROR if the user does not exist
-     * @return ERROR if another error occurred
      */
-    static RC disconnect(String user)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void disconnect(String user){
+        String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
+        dealWithErrors(registerComunication(user, DISCONNECT, "-1", "NONE"), msg); // Perforrm the connection
+        //thread.interrupt(); ISSUEEEEE
     }
 
     /**
+     * @brief Send a message to a user
+     *
      * @param user    - Receiver user name
      * @param message - Message to be sent
      *
@@ -182,10 +241,11 @@ class client {
      * @return USER_ERROR if the user is not connected (the message is queued for delivery)
      * @return ERROR the user does not exist or another error occurred
      */
-    static RC send(String user, String message)
-    {
-        // Write your code here
-        return RC.ERROR;
+    static void send(String user, String message){
+        String [] msg = {"c> SEND OK - MESSAGE " , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
+        RC result = registerComunication(user, SEND, "-1", message); // Execute the sending and obtaining the result
+        msg[0] += "" + idMessage; // Concatenate the id of the message to the message
+        dealWithErrors(result, msg); // Perforrm the connection
     }
 
     /**
@@ -330,25 +390,9 @@ class client {
 			usage();
 			return;
 		}
-        /* ********** Variables to use *********** */
-//        String stringToSend = "TEST"; // String to send to the server
-//        String serverName = argv[1]; // name of the server
-//        int portNumber = Integer.parseInt(argv[3]); // port number
-//
-//        String msg = "SEND"; /* message to send to the server */
-//
-//        sendInt(serverName, portNumber, msg.length()); /* send integer */
-//
-//        sendString(serverName, portNumber, msg); /* send a string */
-//
-//        Byte input = receiveByte(serverName, portNumber); /* receive a String from the server */
-//
-//        if(input == 0)  System.out.println("0");
-//        else if(input == 1)  System.out.println("1");
-//        if(input == 2)  System.out.println("2");
-
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
+        freePort = _port + 1; // free port
         shell();
     }
 
