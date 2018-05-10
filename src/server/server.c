@@ -139,12 +139,12 @@ int process_data(int s_local, char* operation) {
 
   if (readLine(s_local, argument1, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
-    return 2;
+    return 3;
   }
 
   if (operation == NULL || argument1 == NULL) {
     printf("s> ERROR MESSAGE FORMAT\n");
-    return 2;
+    return 3;
   }
 
   if (strcmp(operation, "REGISTER\0") == 0) {
@@ -214,7 +214,7 @@ int process_data(int s_local, char* operation) {
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
-      return 2;
+      return 3;
     }
     //assign receiver
     //assign message
@@ -222,7 +222,7 @@ int process_data(int s_local, char* operation) {
     return send_message("guille", "ale", "Te quiero mucho");
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
-    return 2;
+    return 3;
   }
   return 0;
 }
@@ -242,7 +242,7 @@ void* process_request(void* s) {
   bzero(operation, MAX_LINE);
   if (readLine(s_local, operation, MAX_LINE) == -1) {
     fprintf(stderr, "ERROR reading line\n");
-    error = -2;
+    error = 3;
     pthread_exit(&error);
   }
 

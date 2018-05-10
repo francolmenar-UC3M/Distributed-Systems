@@ -105,9 +105,10 @@ NODE * Dequeue(Queue *pQueue) {
     pthread_mutex_lock(&lock);
     /*the queue is empty or bad param*/
     NODE *item;
-    if (isEmpty(pQueue))
+    if (isEmpty(pQueue)) {
         pthread_mutex_unlock(&lock);
         return NULL;
+    }
     item = pQueue->head;
     pQueue->head = (pQueue->head)->prev;
     pQueue->size--;
