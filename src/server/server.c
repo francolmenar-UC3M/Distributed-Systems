@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 int register_user(struct sockaddr_in* client_addr, char *username) {
   if (search(username) != NULL) {
     printf("s> REGISTER %s FAIL\n", username);
-    return -1;
+    return 1;
   } else {
     struct user *new_user = (struct user*)malloc(sizeof(struct user));
     strcpy(new_user->username, username);
@@ -134,15 +134,25 @@ int register_user(struct sockaddr_in* client_addr, char *username) {
   return 0;
 }
 
-int process_data(struct sockaddr_in* client_addr, char* operation, char* argument1, char* argument2) {
+int process_data(int s_local, char* operation) {
+  char argument1[MAX_LINE];
+
+  if (readLine(s_local, argument1, MAX_LINE) == -1) {
+    fprintf(stderr, "ERROR reading line\n");
+    return 2;
+  }
 
   if (operation == NULL || argument1 == NULL) {
     printf("s> ERROR MESSAGE FORMAT\n");
-    return -2;
+    return 2;
   }
 
   if (strcmp(operation, "REGISTER\0") == 0) {
-    return register_user(client_addr, argument1);
+    struct sockaddr_in client_addr;
+    socklen_t size;
+    size = sizeof(struct sockaddr_in);
+    getpeername(s_local, (struct sockaddr *)&client_addr, &size);
+    return register_user(&client_addr, argument1);
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
     return unregister(argument1);
   } else if (strcmp(operation, "CONNECT\0") == 0) {
@@ -150,18 +160,23 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* argumen
     //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
     printf("Entering CONNECT\n");
 
+    struct sockaddr_in client_addr;
+    socklen_t size;
+    size = sizeof(struct sockaddr_in);
+    getpeername(s_local, (struct sockaddr *)&client_addr, &size);
+
     struct Node *user_node;
     user_node = search(argument1);
 
     //User does not exist
     if(user_node == NULL){
       printf("CONNECT %s FAIL\n", argument1);
-      return -1;
+      return 1;
     }
     //User is already connected
     if(user_node->data->status != 0){
       printf("CONNECT %s FAIL\n", argument1);
-      return -2;
+      return 2;
     }
     else{ //User is disconnected
       printf("User connecting\n");
@@ -169,8 +184,8 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* argumen
       struct user *data_connected = (struct user*) malloc(sizeof(struct user));
       strcpy(data_connected->username, argument1);
       data_connected->status = TRUE;
-      data_connected->ip_address = &client_addr->sin_addr;
-      data_connected->port = ntohs(client_addr->sin_port);
+      data_connected->ip_address = &client_addr.sin_addr;
+      data_connected->port = ntohs(client_addr.sin_port);
       data_connected->pending_messages = user_node->data->pending_messages;
 
       printf("Creating updated node\n");
@@ -191,33 +206,32 @@ int process_data(struct sockaddr_in* client_addr, char* operation, char* argumen
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
   } else if (strcmp(operation, "SEND\0") == 0) {
+    char argument2[MAX_LINE];
+    if (readLine(s_local, argument2, MAX_LINE) == -1) {
+      fprintf(stderr, "ERROR reading line\n");
+      return 2;
+    }
     //assign receiver
     //assign message
     //send_message(username, receiver, message);
     return send_message("guille", "ale", "Te quiero mucho");
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
-    return -2;
+    return 2;
   }
   return 0;
 }
 
 void* process_request(void* s) {
   int s_local;
-  int return_code;
+  char return_code;
   int error;
-  socklen_t size;
-  struct sockaddr_in local_client;
 
   pthread_mutex_lock(&mutex_msg);
   s_local = *(int*)s;
   sock_not_free = FALSE;
   pthread_cond_signal(&cond_msg);
   pthread_mutex_unlock(&mutex_msg);
-
-  size = sizeof(struct sockaddr_in);
-
-  getpeername(s_local, (struct sockaddr *)&local_client, &size);
 
   char operation[MAX_LINE];
   bzero(operation, MAX_LINE);
@@ -227,25 +241,9 @@ void* process_request(void* s) {
     pthread_exit(&error);
   }
 
-  char argument1[MAX_LINE];
-  char argument2[MAX_LINE];
+  return_code = process_data(s_local, operation);
 
-  if (readLine(s_local, argument1, MAX_LINE) == -1) {
-    fprintf(stderr, "ERROR reading line\n");
-    error = -2;
-    pthread_exit(&error);
-  }
-
-  if (readLine(s_local, argument2, MAX_LINE) == -1) {
-    fprintf(stderr, "ERROR reading line\n");
-    error = -2;
-    pthread_exit(&error);
-  }
-
-  return_code = process_data(&local_client, operation, argument1, argument2);
-
-  send(s_local, &return_code, sizeof(int), MSG_NOSIGNAL);
-  // fprintf(stderr, "Sent code: %d\n", return_code);
+  send(s_local, &return_code, 1, MSG_NOSIGNAL);
   close(s_local);
   pthread_exit(0);
 
