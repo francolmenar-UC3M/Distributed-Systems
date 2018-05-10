@@ -28,6 +28,8 @@ class client {
     private static String _server   = null;
     private static String userName = null; // user register in the system
     private static String idMessage = "-1"; // used for SEND
+    private static int maxSizeMsg = 256; // Maximum size of the message received by the user
+
 
     private static ServerSocket javaServerPort = null;
     private static int _port = -1;
@@ -42,12 +44,35 @@ class client {
     /* ******************** METHODS ******************* */
 
     /**
+     * Checks if any parameter of an array is equal to null
+     *
+     * @param parameter: the array of parameters
+     * @param methodName: the name of the method who is calling this method
+     * @return true if the parameters are correct and false otherwise
+     */
+    protected static boolean checkNullParameters(Object [] parameter, String methodName){
+        if((parameter == null) || (methodName == null)) { // check for the validity of the parameters
+            System.out.println("Values of checkNullParameters equal null");
+            return false;
+        }
+        for (Object aParameter : parameter) { // check all the parameters to check
+            if (aParameter == null) { // check if the String is equal to null
+                System.out.println("Values of " + methodName + " equal null"); // parameter equal null
+                return false;
+            }
+        }
+       return true;
+    }
+
+    /**
      * Receive a Byte from the server
      *
      * @param socket: the socket used in the communication
      * @return the Byte received from the server
      */
     private static Byte receiveByte(Socket socket) {
+        if(!checkNullParameters(new Socket[]{socket},"receiveByte")){return null;} // check for the validity of the parameters
+
         try {
             DataInputStream input  = new DataInputStream(socket.getInputStream()); // buffer reader
 
@@ -58,14 +83,32 @@ class client {
             }
             return response;
         } catch (IOException e) {
+            System.out.println("IOException in receiveByte");
             e.printStackTrace();
             return null;
         }
     }
 
+    /**
+     * @brief Receive a String from the server up to maxSize bytes
+     *
+     * @param input: the input channel to read the String sent by the server
+     * @return the String read from the user. In case of any error null is returned
+     */
+    protected static String receiveString(DataInputStream input){
+        if(!checkNullParameters(new DataInputStream[]{input},Thread.currentThread().getStackTrace()[1].getMethodName())){return null;} // check for the validity of the parameters
 
-    private static String receiveString(Socket socket) {
-        return "-1";
+        byte[] msg = new byte[maxSizeMsg];
+        try {
+            if ( (input.read(msg, 0, maxSizeMsg)) < 0){ // read the String sent by the server
+                System.out.println("Error reading the message");
+            }
+        } catch (IOException e) {
+            System.out.println("IOException in receiveString");
+            e.printStackTrace();
+            return null;
+        }
+        return String.valueOf(msg);
     }
 
     /**
@@ -75,6 +118,8 @@ class client {
      * @param msg: String to be sent
      */
     private static void sendString(Socket socket, String msg) {
+        if(!checkNullParameters(new Object[]{socket, msg},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
         try { // handle socket errors
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
 
@@ -99,6 +144,8 @@ class client {
      * @return ERROR if another error occurred
      */
     private static RC registerCommunication(String user, String operation, String port, String message){
+        if(!checkNullParameters(new String[]{user, operation, port, message},Thread.currentThread().getStackTrace()[1].getMethodName())){return null;} // check for the validity of the parameters
+
         try {
             Socket socket = new Socket(_server, _port); // socket to connect to the server
             sendString(socket, operation); // send the operation to the server
@@ -115,9 +162,17 @@ class client {
                 sendString(socket, message); // If the operation is a SEND, the message is sent too
             }
             Byte result = receiveByte(socket); // get the response byte
+            if(result == null) { // check the result byte
+                System.out.println("Error in receiveByte");
+                return null;
+            }
 
             /* SEND AND CORRECT RESULT */
-            if(operation.equals(SEND) && result == 0x00) { idMessage = receiveString(socket);} // get the id associated to the message sent (only in SENT)
+            if(operation.equals(SEND) && result == 0x00) {
+                DataInputStream input = new DataInputStream(socket.getInputStream()); // input for receiving the idMessage
+                idMessage = receiveString(input); // Get the id of the message
+
+            }
 
             socket.close(); // close the socket
 
@@ -134,10 +189,10 @@ class client {
                     return RC.SWITCH_ERROR;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("IO exception in registerCommunication");
+            if (operation.equals(CONNECT)  || operation.equals(DISCONNECT)) {return RC.FAIL;} // The system errors for each operation
+            else {return RC.ERROR;}
         }
-        if (operation.equals(CONNECT)  || operation.equals(DISCONNECT)) {return RC.FAIL;}
-        else {return RC.ERROR;}
     }
 
     /**
@@ -147,6 +202,9 @@ class client {
      * @param msg: Array of error messages to print
      */
     private static RC dealWithErrors(RC error, String [] msg){
+        if(!checkNullParameters(new RC[]{error},Thread.currentThread().getStackTrace()[1].getMethodName())){return null;} // check for the validity of the parameters
+        if(!checkNullParameters(msg,Thread.currentThread().getStackTrace()[1].getMethodName())){return null;} // check for the validity of the parameters
+
         switch(error){
             case OK:
                 System.out.println(msg[0]);
@@ -173,6 +231,12 @@ class client {
      * @param user - User name to register in the system
      */
     private static void register(String user){
+        if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
+        if(user == null){
+            System.out.println("Values of register equal null");
+            return;
+        }
         String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
         dealWithErrors(registerCommunication(user, REGISTER,"-1", "NONE"), msg); // Register the new user
     }
@@ -183,6 +247,12 @@ class client {
      * @param user - User name to unregister from the system
      */
     private static void unregister(String user){
+        if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
+        if(user == null){
+            System.out.println("Values of unregister equal null");
+            return;
+        }
         String [] msg = {"c> UNREGISTER OK", "c> USER DOES NOT EXIST", "c> UNREGISTER FAIL", "UNREGISTER BROKEN"}; // error messages
         RC result = dealWithErrors(registerCommunication(user, UNREGISTER,"-1", "NONE"), msg); // Perform the unregistration
         if(result == RC.OK || result == RC.FAIL){ userName = null;} // set the register user to null
@@ -194,6 +264,8 @@ class client {
      * @param user - User name to connect to the system
      */
     private static void connect(String user){
+        if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
         try{
             javaServerPort = new ServerSocket(0); // socket to listen to the server
@@ -201,6 +273,7 @@ class client {
             thread.start();
             if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(javaServerPort.getLocalPort()), "NONE"), msg)) == RC.OK){ userName = user;} // Connect the user
         } catch (IOException e) {
+            System.out.println("IO exception in connect");
             e.printStackTrace();
         }
     }
@@ -211,13 +284,16 @@ class client {
      * @param user - User name to disconnect from the system
      */
     private static void disconnect(String user){
+        if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
         String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
         dealWithErrors(registerCommunication(user, DISCONNECT, "-1", "NONE"), msg); // Perform the connection
-        thread.interrupt();
+        if(thread != null){thread.interrupt();} // Interrupt the thread execution
+        else{ return;} //There is no thread running
         try {
-            javaServerPort.close();
-        } catch (IOException e) {
-            return;
+            if (javaServerPort != null) {javaServerPort.close();} // Close the socket
+        }catch (IOException e) {
+            // Thread finished
         }
     }
 
@@ -232,6 +308,8 @@ class client {
      * @return ERROR the user does not exist or another error occurred
      */
     private static void send(String user, String message){
+        if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
         String [] msg = {"c> SEND OK - MESSAGE " , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
         RC result = registerCommunication(user, SEND, "-1", message); // Execute the sending and obtaining the result
         msg[0] += "" + idMessage; // Concatenate the id of the message to the message
@@ -241,8 +319,7 @@ class client {
     /**
      * @brief Command interpreter for the client. It calls the protocol functions.
      */
-    private static void shell()
-    {
+    private static void shell(){
         boolean exit = false;
         String input;
         String [] line;
@@ -305,6 +382,8 @@ class client {
                     /* ************* QUIT ************* */
                     else if (line[0].equals("QUIT")){
                         if (line.length == 1) {
+                            if(thread != null){thread.interrupt();} // Interrupt the thread execution
+                            if(javaServerPort != null){ javaServerPort.close();} // Close the socket
                             exit = true;
                         } else {
                             System.out.println("Syntax error. Use: QUIT");
@@ -384,5 +463,4 @@ class client {
         _port = Integer.parseInt(argv[3]); // port number
         shell();
     }
-
 }

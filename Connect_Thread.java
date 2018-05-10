@@ -5,11 +5,9 @@ import java.net.Socket;
 
 public class Connect_Thread extends Thread {
     private static final String SEND_MESSAGE = "SEND MESSAGE";
-    private static final int maxSize = 256;
 
     private static String server; // server IP address
     private static ServerSocket serverSocket; // socket to listen to the server
-    private static int maxSizeMsg = 256; // Maximum size of the message received by the user
 
     public Connect_Thread(String server, ServerSocket serverSocket){
         this.server = server;
@@ -17,18 +15,33 @@ public class Connect_Thread extends Thread {
     }
 
     public void run(){
+        if(!client.checkNullParameters(new ServerSocket[]{serverSocket},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
+        String operation; // the operation to be performed
+        Socket clientSocket = new Socket();
         try {
-            String operation; // the operation to be performed
-            Socket clientSocket = serverSocket.accept(); // accept the connection
-            while(!interrupted()){
+            clientSocket = serverSocket.accept(); // accept the connection
+        } catch (IOException e) {
+            // Thread finished
+        }
+            while(!interrupted()){ // Executed while the thread is not interrupted
 
-                DataInputStream input  = new DataInputStream(clientSocket.getInputStream()); // buffer reader
+                DataInputStream input  = null; // buffer reader
 
-                if((operation = receiveString(input)) == null) { // get the operation to be performed
+                try {
+                    input = new DataInputStream(clientSocket.getInputStream());
+                } catch (IOException e) {
+                    System.out.println("IO exception in disconnect");
+                    e.printStackTrace();
+                }
+
+                if((operation = client.receiveString(input)) == null) { // get the operation to be performed
                     System.out.println("Error reading the operation");
                     break;
                 }
-                if(operation.equals(SEND_MESSAGE)){ // SEND MESSAGE operation
+
+                /* ********** SEND MESSAGE ************ */
+                if(operation.equals(SEND_MESSAGE)){
                     if(!sendOperation(input)){ // Execute send message operation
                         System.out.println("Error while send message");
                         break;
@@ -38,27 +51,6 @@ public class Connect_Thread extends Thread {
                     System.out.println("Wrong operation received");
                 }
             }
-        } catch (IOException e) {
-            return;
-        }
-    }
-
-    /**
-     * @brief Receive a String from the server up to maxSize bytes
-     *
-     * @param input: the input channel to read the String sent by the server
-     * @return the String read from the user. In case of any error null is returned
-     */
-    private String receiveString(DataInputStream input){
-        byte[] msg = new byte[maxSize];
-        try {
-            if ( (input.read(msg, 0, maxSizeMsg)) < 0){ // read the String sent by the server
-                System.out.println("Error reading the message");
-            }
-        } catch (IOException e) {
-            return null;
-        }
-        return String.valueOf(msg);
     }
 
     /**
@@ -67,16 +59,18 @@ public class Connect_Thread extends Thread {
      * @param input: the input channel to read the String sent by the server
      */
     private boolean sendOperation(DataInputStream input){
+        if(!client.checkNullParameters(new DataInputStream[]{input},Thread.currentThread().getStackTrace()[1].getMethodName())){return false;} // check for the validity of the parameters
+
         String originUser, msgId, msg; // Strings to be received from the server
-        if((originUser = receiveString(input)) == null){ // Read the originUser
+        if((originUser = client.receiveString(input)) == null){ // Read the originUser
             System.out.println("Error reading the origin user");
             return false;
         }
-        else if((msgId = receiveString(input)) == null){ // Read the msgId
+        else if((msgId = client.receiveString(input)) == null){ // Read the msgId
             System.out.println("Error reading the msgId");
             return false;
         }
-        else if((msg = receiveString(input)) == null){ // Read the msg
+        else if((msg = client.receiveString(input)) == null){ // Read the msg
             System.out.println("Error reading the msg");
             return false;
         }
