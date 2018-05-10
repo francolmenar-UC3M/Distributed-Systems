@@ -1,7 +1,9 @@
 #include<stdio.h>
 #include<string.h>    //strlen
 #include<sys/socket.h>
+#include<sys/types.h>    //socket
 #include<arpa/inet.h> //inet_addr
+#include <netdb.h>
 #include<unistd.h>    //write
 #include "read_line.h"
 #include <stdlib.h>
@@ -54,6 +56,70 @@ int sendByte(int sock, char *input) {
   return 0;
 }
 
+int sendString(int sock, char *input) {
+    if(send_msg( sock, (char *) input, sizeof(char) * MAX_LINE) < 0){ /*send result*/
+        perror("error sending the request");
+        return -1;
+    }
+    return 0;
+}
+
+int connectOp(int client_sock){
+  char port[MAX_LINE];
+
+  if( receiveString(client_sock, port) < 0){
+    perror("receive string failed");
+    return 1;
+  }
+  int portN = atoi(port);
+  printf("Port: %d\n", portN);
+
+
+  char * msg = "SEND MESSAGE\0";
+  printf("Message to send: %s\n", msg);
+
+  /*** Create socket ***/
+  int sock;
+  struct sockaddr_in server;
+  struct hostent *hp;
+
+  sock = socket(AF_INET , SOCK_STREAM , 0);
+  if (sock == -1)
+  {
+    printf("Could not create socket");
+  }
+  printf("Socket created\n");
+  char * ip = "163.117.218.98\0";
+
+  bzero((char *) &server, sizeof(server)); /*reventamos mucho*/
+
+  hp = gethostbyaddr( (char *) &ip, sizeof(ip), AF_INET);
+
+  if(hp == NULL) {
+    printf("Error hp \n");
+  }
+
+  memcpy(&(server.sin_addr), hp -> h_addr, hp -> h_length);
+
+  server.sin_family = AF_INET;
+  server.sin_port = htons( portN );
+
+  printf("%d\n", portN);
+  //Connect to remote server
+  if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
+  {
+    printf("connect failed. Error\n");
+    return 1;
+  }
+
+  printf("Connected\n");
+
+  sendString(sock, msg);
+  printf("Sent\n");
+
+  return 0;
+}
+
 int main(int argc , char *argv[]){
   int socket_desc , client_sock , c;
   struct sockaddr_in server , client;
@@ -87,7 +153,6 @@ int main(int argc , char *argv[]){
         perror("accept failed");
         return 1;
     }
-      printf("Accept\n");
 
       /* Receive an int */
 //    int length;
@@ -100,19 +165,25 @@ int main(int argc , char *argv[]){
 
 
     //client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
-    char input[MAX_LINE];
-    if( receiveString(client_sock, input) < 0){
+    char operation[MAX_LINE];
+    if( receiveString(client_sock, operation) < 0){
       perror("receive string failed");
       return 1;
     }
-    printf("String: %s\n", input);
+    printf("Operation: %s\n", operation);
 
+    char username[MAX_LINE];
 
-      if( receiveString(client_sock, input) < 0){
+      if( receiveString(client_sock, username) < 0){
       perror("receive string failed");
       return 1;
     }
-    printf("User: %s\n", input);
+    printf("User: %s\n", username);
+
+    if(strcmp(operation, "CONNECT") == 0){
+
+     // connectOp(client_sock);
+    }
 
     //close(client_sock); /*close client socket*/
 

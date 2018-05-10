@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 #include "user.h"
 
@@ -16,7 +15,6 @@ typedef struct Node  {
 
 /* Head of the Doubly Linked List*/
 Node* head;
-pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Deletes all the list and frees the memory */
 int destroyList() {
@@ -31,8 +29,6 @@ int destroyList() {
     }
 
     head = NULL;
-
-    pthread_mutex_destroy(&list_mutex);
 
     return 0;
 }
@@ -50,7 +46,6 @@ Node* getNewNode(struct user* data) {
 
 /* Method to print in stdout the current nodes and their values (debugging) */
 void printList() {
-  pthread_mutex_lock(&list_mutex);
 	Node* temp = head;
   int counter = 0;
 	while(temp != NULL) {
@@ -58,12 +53,10 @@ void printList() {
 		temp = temp->next;
     counter++;
 	}
-  pthread_mutex_unlock(&list_mutex);
 }
 
 /* Method to insert a new node in the list. This node will be added at the end */
 int insert(Node* newNode) {
-    pthread_mutex_lock(&list_mutex);
     Node* temp = head;
 
     if(head == NULL) {
@@ -74,6 +67,7 @@ int insert(Node* newNode) {
     while(temp != NULL) {
         if(strcmp(temp->data->username, newNode->data->username) == 0) {
             /* Key already exists */
+            printList();
             return -1;
         }
 
@@ -86,13 +80,11 @@ int insert(Node* newNode) {
 
     temp->next = newNode;
     newNode->prev = temp;
-    pthread_mutex_unlock(&list_mutex);
     return 0;
 }
 
 /* Deletes the node with the provided key */
 int delete(char* username) {
-    pthread_mutex_lock(&list_mutex);
     Node* temp = head;
 
     if(head == NULL) {
@@ -118,14 +110,12 @@ int delete(char* username) {
         }
         temp = temp->next;
     }
-    pthread_mutex_unlock(&list_mutex);
 
     return -1;
 }
 
 /* Returns the node with the provided key associated */
 Node* search(char* username) {
-    pthread_mutex_lock(&list_mutex);
     Node* temp = head;
 
     if(head == NULL) {
@@ -138,14 +128,12 @@ Node* search(char* username) {
         }
 	      temp = temp->next;
     }
-    pthread_mutex_unlock(&list_mutex);
 
     return NULL;
 }
 
 
 int modify(Node* newNode) {
-    pthread_mutex_lock(&list_mutex);
     Node* temp = head;
 
     if(head == NULL) {
@@ -167,13 +155,11 @@ int modify(Node* newNode) {
         }
     }
     /* Key not found */
-    pthread_mutex_unlock(&list_mutex);
     return -1;
 }
 
 /* Returns the number of nodes currently stored in the list */
 int getCardinality() {
-    pthread_mutex_lock(&list_mutex);
     Node* temp = head;
     int count = 0;
 
@@ -186,7 +172,6 @@ int getCardinality() {
       count++;
     	temp = temp->next;
     }
-    pthread_mutex_unlock(&list_mutex);
 
     return count;
 }
