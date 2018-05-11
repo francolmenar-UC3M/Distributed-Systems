@@ -257,8 +257,11 @@ class client {
 
         String [] msg = {"c> CONNECT OK", "c> CONNECT FAIL, USER DOES NOT EXIST", "c> USER ALREADY CONNECTED", "c> CONNECT FAIL"}; // error messages
         try{
+            if(userName != null){ // Check if there is a user already register
+                disconnect(userName); // disconnect the current user
+            }
             javaServerPort = new ServerSocket(0); // socket to listen to the server
-            thread = new Connect_Thread(_server,javaServerPort);
+            thread = new Connect_Thread(javaServerPort);
             thread.start();
             if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(javaServerPort.getLocalPort()), "NONE"), msg)) == RC.OK){ userName = user;} // Connect the user
         } catch (IOException e) {
@@ -276,13 +279,21 @@ class client {
 
         String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
         dealWithErrors(registerCommunication(user, DISCONNECT, "-1", "NONE"), msg); // Perform the connection
-        if(thread != null){thread.interrupt();} // Interrupt the thread execution
-        else{ return;} //There is no thread running
-        try {
-            if (javaServerPort != null) {javaServerPort.close();} // Close the socket
-        }catch (IOException e) {
-            // Thread finished
+        if(user.equals(userName)){ // check if the disconnected user is the one connected in this computer
+            userName = null; // set the user connected to the system to null
+
+            if(thread != null){thread.interrupt();} // Interrupt the thread execution
+            else{ return;} //There is no thread running
+            try {
+                if (javaServerPort != null) {
+                    javaServerPort.close(); // Close the socket
+                    javaServerPort = null; // set the socket to null
+                }
+            }catch (IOException e) {
+                // Thread finished
+            }
         }
+
     }
 
     /**
@@ -370,8 +381,7 @@ class client {
                     /* ************* QUIT ************* */
                     else if (line[0].equals("QUIT")){
                         if (line.length == 1) {
-                            if(thread != null){thread.interrupt();} // Interrupt the thread execution
-                            if(javaServerPort != null){ javaServerPort.close();} // Close the socket
+                            if(userName != null){disconnect(userName);}
                             exit = true;
                         } else {
                             System.out.println("c> Syntax error. Use: QUIT");

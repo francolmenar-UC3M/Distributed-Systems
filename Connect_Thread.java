@@ -6,11 +6,9 @@ import java.net.Socket;
 public class Connect_Thread extends Thread {
     private static final String SEND_MESSAGE = "SEND MESSAGE";
 
-    private static String server; // server IP address
     private static ServerSocket serverSocket; // socket to listen to the server
 
-    public Connect_Thread(String server, ServerSocket serverSocket){
-        this.server = server;
+    public Connect_Thread(ServerSocket serverSocket){
         this.serverSocket = serverSocket;
     }
 
@@ -23,6 +21,7 @@ public class Connect_Thread extends Thread {
             try {
                 clientSocket = serverSocket.accept(); // accept the connection
             } catch (IOException e) {
+                return;
                 // Thread finished
             }
             DataInputStream input  = null; // buffer reader
@@ -30,12 +29,12 @@ public class Connect_Thread extends Thread {
             try {
                 input = new DataInputStream(clientSocket.getInputStream());
             } catch (IOException e) {
-                System.out.println("Server cannot connect to the client");
+                System.out.print("Server cannot connect to the client\nc> ");
                 return;
             }
 
             if((operation = client.receiveString(input)) == null) { // get the operation to be performed
-                System.out.println("Error receiving a message from the server");
+                System.out.print("Error receiving a message from the server\nc> ");
                 closeSocket(clientSocket);
                 break;
             }
@@ -43,13 +42,13 @@ public class Connect_Thread extends Thread {
             /* ********** SEND MESSAGE ************ */
             if(operation.equals(SEND_MESSAGE)){
                 if(!sendOperation(input)){ // Execute send message operation
-                    System.out.println("Error receiving a message from the server");
+                    System.out.print("Error receiving a message from the server\nc> ");
                     closeSocket(clientSocket);
                     break;
                 }
             }
             else{
-                System.out.println("Error receiving a message from the server");
+                System.out.print("Error receiving a message from the server\nc> ");
             }
             closeSocket(clientSocket);
         }
@@ -73,18 +72,18 @@ public class Connect_Thread extends Thread {
 
         String originUser, msgId, msg; // Strings to be received from the server
         if((originUser = client.receiveString(input)) == null){ // Read the originUser
-            System.out.println("Error receiving a message from the server");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
         else if((msgId = client.receiveString(input)) == null){ // Read the msgId
-            System.out.println("Error receiving a message from the server");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
         else if((msg = client.receiveString(input)) == null){ // Read the msg
-            System.out.println("Error receiving a message from the server");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
-        System.out.println("c> MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END");
+        System.out.print("c> MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END");
         return true;
     }
 
