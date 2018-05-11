@@ -4,7 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Connect_Thread extends Thread {
-    private static final String SEND_MESSAGE = "SEND MESSAGE";
+    private static final String SEND_MESSAGE = "SEND_MESSAGE";
 
     private static ServerSocket serverSocket; // socket to listen to the server
 

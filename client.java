@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.ServerSocket;
+import java.util.regex.Pattern;
 
 import gnu.getopt.Getopt;
 
@@ -24,6 +25,9 @@ class client {
     }
 
     /******************* ATTRIBUTES *******************/
+
+    private static final Pattern PATTERN = Pattern.compile(
+            "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$"); // For checking the IP
 
     private static String _server   = null;
     private static String userName = null; // user register in the system
@@ -447,6 +451,9 @@ class client {
         return true;
     }
 
+    public static boolean validate(final String ip) {
+        return PATTERN.matcher(ip).matches();
+    }
     /********************* MAIN **********************/
 
     public static void main(String[] argv){
@@ -454,6 +461,10 @@ class client {
 			usage();
 			return;
 		}
+		if(!validate(argv[1])){
+            System.out.println("Invalid IP address");
+            return;
+        }
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
         shell();
