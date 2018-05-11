@@ -430,7 +430,7 @@ class client {
             return false;
 
         if ((_port < 1024) || (_port > 65535)) {
-            System.out.println("Error: Port must be in the range 1024 <= port <= 65535");
+            System.out.println("c> Error: Port must be in the range 1024 <= port <= 65535");
             return false;
         }
 
