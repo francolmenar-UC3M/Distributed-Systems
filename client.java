@@ -52,12 +52,12 @@ class client {
      */
     protected static boolean checkNullParameters(Object [] parameter, String methodName){
         if((parameter == null) || (methodName == null)) { // check for the validity of the parameters
-            System.out.println("Values of checkNullParameters equal null");
+            System.out.println("c> Internal error of the client");
             return false;
         }
         for (Object aParameter : parameter) { // check all the parameters to check
             if (aParameter == null) { // check if the String is equal to null
-                System.out.println("Values of " + methodName + " equal null"); // parameter equal null
+                System.out.println("c> Internal error of the client");
                 return false;
             }
         }
@@ -78,13 +78,12 @@ class client {
 
             Byte response;
             if ( (response = input.readByte()) < 0){ // return the String received
-                System.out.println("Error reading byte");
+                System.out.println("c> Error receiving the response from the server");
                 return null;
             }
             return response;
         } catch (IOException e) {
-            System.out.println("IOException in receiveByte");
-            e.printStackTrace();
+            System.out.println("c> Error receiving the response from the server");
             return null;
         }
     }
@@ -101,11 +100,10 @@ class client {
         byte[] msg = new byte[maxSizeMsg];
         try {
             if ( (input.read(msg, 0, maxSizeMsg)) < 0){ // read the String sent by the server
-                System.out.println("Error reading the message");
+                System.out.println("c> Error reading the data from the server");
             }
         } catch (IOException e) {
-            System.out.println("IOException in receiveString");
-            e.printStackTrace();
+            System.out.println("c> Error reading the data from the server");
             return null;
         }
         return String.valueOf(msg);
@@ -126,8 +124,7 @@ class client {
             outputObject.write(msg.getBytes());
             outputObject.write('\0');
         }  catch (IOException e) {
-            System.out.println("IO exception");
-            e.printStackTrace();
+            System.out.println("c> Error sending the data to the server");
         }
     }
 
@@ -163,7 +160,7 @@ class client {
             }
             Byte result = receiveByte(socket); // get the response byte
             if(result == null) { // check the result byte
-                System.out.println("Error in receiveByte");
+                System.out.println("c> Error receiving the response from the server (quitar antes de entregar)");
                 return null;
             }
 
@@ -189,7 +186,7 @@ class client {
                     return RC.SWITCH_ERROR;
             }
         } catch (IOException e) {
-            System.out.println("IO exception in registerCommunication");
+            System.out.println("c> Error in the communication with the server");
             if (operation.equals(CONNECT)  || operation.equals(DISCONNECT)) {return RC.FAIL;} // The system errors for each operation
             else {return RC.ERROR;}
         }
@@ -265,8 +262,7 @@ class client {
             thread.start();
             if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(javaServerPort.getLocalPort()), "NONE"), msg)) == RC.OK){ userName = user;} // Connect the user
         } catch (IOException e) {
-            System.out.println("IO exception in connect");
-            e.printStackTrace();
+            System.out.println("c> Error connecting with the server");
         }
     }
 
@@ -329,7 +325,7 @@ class client {
                         if  (line.length == 2) {
                             register(line[1]); // userName = line[1]
                         } else {
-                            System.out.println("Syntax error. Usage: REGISTER <userName>");
+                            System.out.println("c> Syntax error. Usage: REGISTER <userName>");
                         }
                     }
 
@@ -338,7 +334,7 @@ class client {
                         if  (line.length == 2) {
                             unregister(line[1]); // userName = line[1]
                         } else {
-                            System.out.println("Syntax error. Usage: UNREGISTER <userName>");
+                            System.out.println("c> Syntax error. Usage: UNREGISTER <userName>");
                         }
                     }
 
@@ -347,7 +343,7 @@ class client {
                         if  (line.length == 2) {
                             connect(line[1]); // userName = line[1]
                         } else {
-                            System.out.println("Syntax error. Usage: CONNECT <userName>");
+                            System.out.println("c> Syntax error. Usage: CONNECT <userName>");
                         }
                     }
 
@@ -356,7 +352,7 @@ class client {
                         if  (line.length == 2) {
                             disconnect(line[1]); // userName = line[1]
                         } else {
-                            System.out.println("Syntax error. Usage: DISCONNECT <userName>");
+                            System.out.println("c> Syntax error. Usage: DISCONNECT <userName>");
                         }
                     }
 
@@ -367,7 +363,7 @@ class client {
                             String message = input.substring(input.indexOf(' ')+1).substring(input.indexOf(' ')+1);
                             send(line[1], message); // userName = line[1]
                         } else {
-                            System.out.println("Syntax error. Usage: SEND <userName> <message>");
+                            System.out.println("c> Syntax error. Usage: SEND <userName> <message>");
                         }
                     }
 
@@ -378,18 +374,17 @@ class client {
                             if(javaServerPort != null){ javaServerPort.close();} // Close the socket
                             exit = true;
                         } else {
-                            System.out.println("Syntax error. Use: QUIT");
+                            System.out.println("c> Syntax error. Use: QUIT");
                         }
                     }
 
                     /* ************ UNKNOWN *********** */
                     else {
-                        System.out.println("Error: command '" + line[0] + "' not valid.");
+                        System.out.println("c> Error: command '" + line[0] + "' not valid.");
                     }
                 }
             } catch (java.io.IOException e) {
-                System.out.println("Exception: " + e);
-                e.printStackTrace();
+                System.out.println("c> Error reading the command");
             }
         }
     }
@@ -405,8 +400,7 @@ class client {
     /**
      * @brief Parses program execution arguments
      */
-    private static boolean parseArguments(String [] argv)
-    {
+    private static boolean parseArguments(String [] argv){
         Getopt g = new Getopt("client", argv, "ds:p:");
 
         int c;
@@ -445,8 +439,7 @@ class client {
 
     /********************* MAIN **********************/
 
-    public static void main(String[] argv)
-    {
+    public static void main(String[] argv){
 		if(!parseArguments(argv)) {
 			usage();
 			return;
