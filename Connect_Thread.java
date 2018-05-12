@@ -4,13 +4,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Connect_Thread extends Thread {
-    private static final String SEND_MESSAGE = "SEND MESSAGE";
+    private static final String SEND_MESSAGE = "SEND_MESSAGE";
 
-    private static String server; // server IP address
     private static ServerSocket serverSocket; // socket to listen to the server
 
-    public Connect_Thread(String server, ServerSocket serverSocket){
-        this.server = server;
+    public Connect_Thread(ServerSocket serverSocket){
         this.serverSocket = serverSocket;
     }
 
@@ -19,38 +17,49 @@ public class Connect_Thread extends Thread {
 
         String operation; // the operation to be performed
         Socket clientSocket = new Socket();
-        try {
-            clientSocket = serverSocket.accept(); // accept the connection
-        } catch (IOException e) {
-            // Thread finished
-        }
-            while(!interrupted()){ // Executed while the thread is not interrupted
+        while(!interrupted()){ // Executed while the thread is not interrupted
+            try {
+                clientSocket = serverSocket.accept(); // accept the connection
+            } catch (IOException e) {
+                return;
+                // Thread finished
+            }
+            DataInputStream input  = null; // buffer reader
 
-                DataInputStream input  = null; // buffer reader
+            try {
+                input = new DataInputStream(clientSocket.getInputStream());
+            } catch (IOException e) {
+                System.out.print("Server cannot connect to the client\nc> ");
+                return;
+            }
 
-                try {
-                    input = new DataInputStream(clientSocket.getInputStream());
-                } catch (IOException e) {
-                    System.out.println("IO exception in disconnect");
-                    e.printStackTrace();
-                }
+            if((operation = client.receiveString(input)) == null) { // get the operation to be performed
+                System.out.print("Error receiving a message from the server\nc> ");
+                closeSocket(clientSocket);
+                break;
+            }
 
-                if((operation = client.receiveString(input)) == null) { // get the operation to be performed
-                    System.out.println("Error reading the operation");
+            /* ********** SEND MESSAGE ************ */
+            if(operation.equals(SEND_MESSAGE)){
+                if(!sendOperation(input)){ // Execute send message operation
+                    System.out.print("Error receiving a message from the server\nc> ");
+                    closeSocket(clientSocket);
                     break;
                 }
-
-                /* ********** SEND MESSAGE ************ */
-                if(operation.equals(SEND_MESSAGE)){
-                    if(!sendOperation(input)){ // Execute send message operation
-                        System.out.println("Error while send message");
-                        break;
-                    }
-                }
-                else{
-                    System.out.println("Wrong operation received");
-                }
             }
+            else{
+                System.out.print("Error receiving a message from the server\nc> ");
+            }
+            closeSocket(clientSocket);
+        }
+    }
+
+    private void closeSocket(Socket clientSocket) {
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            System.out.println("Error receiving a message from the server");
+        }
     }
 
     /**
@@ -63,18 +72,18 @@ public class Connect_Thread extends Thread {
 
         String originUser, msgId, msg; // Strings to be received from the server
         if((originUser = client.receiveString(input)) == null){ // Read the originUser
-            System.out.println("Error reading the origin user");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
         else if((msgId = client.receiveString(input)) == null){ // Read the msgId
-            System.out.println("Error reading the msgId");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
         else if((msg = client.receiveString(input)) == null){ // Read the msg
-            System.out.println("Error reading the msg");
+            System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
-        System.out.println("c> MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END");
+        System.out.print("c> MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END");
         return true;
     }
 
