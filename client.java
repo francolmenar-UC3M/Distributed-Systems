@@ -110,7 +110,7 @@ class client {
             System.out.println("c> Error reading the data from the server");
             return null;
         }
-        return String.valueOf(msg);
+        return new String(msg);
     }
 
     /**
