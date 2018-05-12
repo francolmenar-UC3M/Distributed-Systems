@@ -16,6 +16,8 @@ typedef struct Node  {
 /* Head of the Doubly Linked List*/
 Node* head;
 
+unsigned int next_message_id;
+
 pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Deletes all the list and frees the memory */
@@ -25,7 +27,7 @@ int destroyList() {
       pthread_mutex_unlock(&list_lock);
       return 0;
     }
-    
+
     Node* node = head;
     Node* temp;
     while(node != NULL) {

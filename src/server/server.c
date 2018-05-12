@@ -26,9 +26,9 @@
 
 
 pthread_mutex_t mutex_msg;
+pthread_mutex_t message_id_lock;
 pthread_cond_t cond_msg;
 int sock_not_free = 1;
-int message_id = 0;
 
 void* process_request(void* s);
 int disconnect(char* username);
@@ -48,6 +48,8 @@ int main(int argc, char* argv[]) {
       fprintf(stderr, "%s\n\n", "usage: ./server -p <port>");
       return -1;
     }
+
+    next_message_id = 1;
 
     server_port = atoi(argv[2]);
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // Open socket
@@ -89,6 +91,7 @@ int main(int argc, char* argv[]) {
 
     pthread_attr_t t_attr;
     pthread_mutex_init(&mutex_msg, NULL);
+    pthread_mutex_init(&message_id_lock, NULL);
     pthread_cond_init(&cond_msg, NULL);
     pthread_attr_init(&t_attr);
     pthread_attr_setdetachstate(&t_attr, PTHREAD_CREATE_DETACHED);
@@ -125,7 +128,7 @@ int register_user(struct sockaddr_in* client_addr, char *username) {
     new_user->ip_address = &client_addr->sin_addr;
     new_user->port = ntohs(client_addr->sin_port);
     new_user->pending_messages = ConstructQueue(10);
-    // new_user->last_message;
+    new_user->last_message = 0;
 
     Node* new_node = getNewNode(new_user);
     insert(new_node);
@@ -187,8 +190,16 @@ int process_data(int s_local, char* operation) {
       strcpy(data_connected->username, argument1);
       data_connected->status = TRUE;
       data_connected->ip_address = &client_addr.sin_addr;
-      data_connected->port = ntohs(client_addr.sin_port);
+
+      char argument2[MAX_LINE];
+      if (readLine(s_local, argument2, MAX_LINE) == -1) {
+        fprintf(stderr, "ERROR reading line\n");
+        return 2;
+      }
+      data_connected->port = atoi(argument2);
+      printf("EL PUERTO BUENO ES: %d\n", data_connected->port);
       data_connected->pending_messages = user_node->data->pending_messages;
+
 
       printf("Creating updated node\n");
       //Create and update user node (now connected)
@@ -205,21 +216,32 @@ int process_data(int s_local, char* operation) {
         send_msg(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
         printf("MESSAGE SENT\n");
       }
+      printf("adios\n");
       return 0;
     }
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
   } else if (strcmp(operation, "SEND\0") == 0) {
+    printf("entro\n");
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
+      fprintf(stderr, "ERROR reading line\n");
+      return 2;
+    }
+    char argument3[MAX_LINE];
+    if (readLine(s_local, argument3, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
       return 2;
     }
     //assign receiver
     //assign message
     //send_message(username, receiver, message);
-    return send_message("guille", "ale", "Te quiero mucho");
+    printf("OP: %s\n", operation);
+    printf("ARG1: %s\n", argument1);
+    printf("ARG2: %s\n", argument2);
+    printf("ARG3: %s\n", argument3);
+    return send_message(argument1, argument2, argument3);
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
     return 2;
@@ -333,39 +355,69 @@ int send_message(char* sender, char* receiver, char* message){
       return 2;
     }
 
-    senderNode->data->last_message++; //!
     NODE *receiver_message = malloc(sizeof(NODE));
-
     receiver_message->data.mes = (struct message*)malloc(sizeof(struct message));
-
-    receiver_message->data.mes->id = message_id;
-    message_id++;
+    pthread_mutex_lock(&message_id_lock);
+    receiver_message->data.mes->id = next_message_id;
     /* If we exceed the maximum size for an unsigned int*/
-    if(message_id > UINT_MAX){
-      message_id = 0;
+    if(next_message_id + 1 > UINT_MAX){
+      next_message_id = 0;
+    } else {
+      next_message_id++;
     }
+    pthread_mutex_unlock(&message_id_lock);
+
+    senderNode->data->last_message = receiver_message->data.mes->id;
 
     strcpy(receiver_message->data.mes->from_user, sender);
     strcpy(receiver_message->data.mes->to_user, receiver);
     strcpy(receiver_message->data.mes->text, message);
 
-    printf("Sender from: %s\n", receiver_message->data.mes->from_user);
-    printf("Sender to: %s\n", receiver_message->data.mes->to_user);
-    printf("Sender mes: %s\n", receiver_message->data.mes->text);
-
-
-    /* Put the message in the message queue */
-    Enqueue(search(receiver)->data->pending_messages, receiver_message);
+    // printf("Sender from: %s\n", receiver_message->data.mes->from_user);
+    // printf("Sender to: %s\n", receiver_message->data.mes->to_user);
+    // printf("Sender mes: %s\n", receiver_message->data.mes->text);
 
     /* If the receiver is disconnected */
     if(receiverNode->data->status == FALSE){
-      printf("MESSAGE %d FROM %s TO %s STORED\n", message_id, sender, receiver);
+      /* Put the message in the message queue */
+      Enqueue(search(receiver)->data->pending_messages, receiver_message);
+      printf("MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
       return 0;
-    }
-    else{
-      receiver_message = Dequeue(search(receiver)->data->pending_messages);
-      send_msg(receiverNode->data->port, receiver_message->data.mes->text, MAX_LINE);
-      printf("SEND MESSAGE %d FROM %s TO %s\n", message_id, sender, receiver);
+    } else {
+      // Receiver connected
+      // receiver_message = Dequeue(search(receiver)->data->pending_messages);
+      // SEND_MESSAGE
+      // QUIEN ENVIA
+      // MENSAJE
+      int sd;
+      struct sockaddr_in receiver_client;
+
+      sd = socket(AF_INET, SOCK_STREAM, 0);
+      if (sd == -1) {
+        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
+        return 3;
+      }
+
+      bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
+      memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
+      receiver_client.sin_family = AF_INET;
+      receiver_client.sin_port = htons(receiverNode->data->port);
+
+      printf("EN EL PUTO PUERTO: %d\n", receiverNode->data->port);
+
+      if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
+        return 3;
+      }
+
+      char msg_id_in_char[11];
+      char * send_message = "SEND_MESSAGE";
+      sprintf(msg_id_in_char, "%u", receiver_message->data.mes->id);
+
+      send(sd, send_message, strlen(send_message), MSG_NOSIGNAL);
+      send(sd, senderNode->data->username, MAX_LINE, MSG_NOSIGNAL);
+      send(sd, msg_id_in_char, 11, MSG_NOSIGNAL);
+      send(sd, receiver_message->data.mes->text, MAX_LINE, MSG_NOSIGNAL);
+      printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }
 
 
