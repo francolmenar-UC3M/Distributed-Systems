@@ -35,14 +35,19 @@ int disconnect(char* username);
 int unregister(char* username);
 int send_message(char* sender, char* receiver, char* message);
 int setMessage(char * str, char * dest);
+int sendToClient(int socket, char * msg);
+
+int sendToClient(int socket, char * msg){
+    char  str [MAX_LINE];
+    setMessage(msg, str);
+    send(sd, str, MAX_LINE, MSG_NOSIGNAL);
+    return 0;
+}
 
 int setMessage(char *str, char * dest){
     char msg[MAX_LINE];
     memset(msg, '\0', sizeof(msg));
-    printf("%s\n", msg);
     strcpy(msg, str);
-    printf("%s\n%ld", msg, strlen(str));
-    //msg[strlen(str)] = '\0';
     strcpy(dest, msg);
     return 0;
 }
@@ -225,7 +230,11 @@ int process_data(int s_local, char* operation) {
       while(isEmpty(user_connected->data->pending_messages) != 1){
         printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
         NODE *queue_message = Dequeue(user_connected->data->pending_messages);
-        send_msg(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+
+        /*** PUERTO DE VERDAD ***/
+        // sendToClient(SOCKET, queue_message->data.mes->text)
+          sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+
         printf("MESSAGE SENT\n");
       }
       printf("adios\n");
@@ -345,7 +354,6 @@ int unregister(char* username){
   }
 }
 
-
 int send_message(char* sender, char* receiver, char* message){
 
     /* The message exceeds the maximum size */
@@ -425,25 +433,10 @@ int send_message(char* sender, char* receiver, char* message){
       char * send_message = "SEND_MESSAGE";
       sprintf(msg_id_in_char, "%u", receiver_message->data.mes->id);
 
-      char  operationMs [MAX_LINE];
-      setMessage(send_message, operationMs);
-        printf("%s\n", operationMs);
-      send(sd, operationMs, MAX_LINE, MSG_NOSIGNAL);
-
-        char  userMs [MAX_LINE];
-        setMessage(senderNode->data->username, userMs);
-        printf("%s\n", userMs);
-      send(sd, userMs, MAX_LINE, MSG_NOSIGNAL);
-
-        char  idMsg [MAX_LINE];
-        setMessage(msg_id_in_char, idMsg);
-        printf("%s\n", idMsg);
-      send(sd, idMsg, MAX_LINE, MSG_NOSIGNAL);
-
-        char  msgData [MAX_LINE];
-        setMessage(receiver_message->data.mes->text, msgData);
-        printf("%s\n", msgData);
-      send(sd, msgData, MAX_LINE, MSG_NOSIGNAL);
+      sendToClient(sd, send_message);
+      sendToClient(sd, senderNode->data->username);
+      sendToClient(sd, msg_id_in_char);
+      sendToClient(sd, receiver_message->data.mes->text);
 
       printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }
