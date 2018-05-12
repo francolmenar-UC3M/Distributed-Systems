@@ -110,7 +110,18 @@ class client {
             System.out.println("c> Error reading the data from the server");
             return null;
         }
-        return new String(msg);
+        int end = -1;
+        for(int i = 0; i < msg.length; i++){ // Search the end of file
+            if(msg[i] == 0x00){
+                end = i;
+                break;
+            }
+        }
+        if(end == -1){ // If no EOF has been found
+            System.out.println("c> Error reading the data from the server");
+        }
+        String aux = new String(msg);
+        return aux.substring(0, end); // Return the message receive until the EOF
     }
 
     /**
