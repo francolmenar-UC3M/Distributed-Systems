@@ -103,7 +103,7 @@ class client {
 
         byte[] msg = new byte[maxSizeMsg];
         try {
-            if ( (input.read(msg, 0, maxSizeMsg)) < 0){ // read the String sent by the server
+            if ( (input.read(msg)) < 0){ // read the String sent by the server
                 System.out.println("c> Error reading the data from the server");
             }
         } catch (IOException e) {

@@ -50,7 +50,7 @@ int receiveString(int sock, char* input) {
 
 int sendByte(int sock, char *input) {
   if(send_msg( sock, (char *) input, sizeof(char)) < 0){ /*send result*/
-    perror("error sending the request");
+      printf("error sending the request");
     return -1;
   }
   return 0;
@@ -58,7 +58,7 @@ int sendByte(int sock, char *input) {
 
 int sendString(int sock, char *input) {
     if(send_msg( sock, (char *) input, sizeof(char) * MAX_LINE) < 0){ /*send result*/
-        perror("error sending the request");
+        printf("error sending the request");
         return -1;
     }
     return 0;
@@ -68,7 +68,7 @@ int connectOp(int client_sock){
   char port[MAX_LINE];
 
   if( receiveString(client_sock, port) < 0){
-    perror("receive string failed");
+      printf("receive string failed");
     return 1;
   }
   int portN = atoi(port);
@@ -124,19 +124,19 @@ int sendOp(int client_sock){
   char username[MAX_LINE];
 
   if( receiveString(client_sock, username) < 0){
-    perror("receive string failed");
+      printf("receive string failed");
     return 1;
   }
   printf("From: %s\n", username);
 
   if( receiveString(client_sock, username) < 0){
-    perror("receive string failed");
+      printf("receive string failed");
     return 1;
   }
   printf("To: %s\n", username);
 
   if( receiveString(client_sock, username) < 0){
-    perror("receive string failed");
+      printf("receive string failed");
     return 1;
   }
   printf("Msg: %s\n", username);
@@ -161,7 +161,7 @@ int main(int argc , char *argv[]){
   server.sin_port = htons( 1025 );
 
   if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0){ /*Bind*/
-    perror("bind failed. Error");
+      printf("bind failed. Error");
     return 1;
   }
   printf("bind done\n");
@@ -173,13 +173,13 @@ int main(int argc , char *argv[]){
     printf("Waiting for incoming connections...\n");
     client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c); /*accept connection from a client*/
     if (client_sock < 0){ /*check for errors*/
-        perror("accept failed");
+        printf("accept failed");
         return 1;
     }
     /********* OPERATION *********/
     char operation[MAX_LINE];
     if( receiveString(client_sock, operation) < 0){
-      perror("receive string failed");
+        printf("receive string failed");
       return 1;
     }
     printf("Operation: %s\n", operation);
@@ -191,9 +191,13 @@ int main(int argc , char *argv[]){
       char byte[1];
       byte[0] = 0x00;
       if( sendByte(client_sock, byte) < 0){ /* send byte */
-        perror("send byte failed");
+        printf("send byte failed");
         return 1;
       }
+        if( sendString(client_sock, "Hola\0") < 0){ /* send byte */
+            printf("send byte failed");
+            return 1;
+        }
     }
       /********* NOT SEND *********/
     else{
@@ -201,7 +205,7 @@ int main(int argc , char *argv[]){
 
       /********* USER NAME *********/
       if( receiveString(client_sock, username) < 0){
-        perror("receive string failed");
+          printf("receive string failed");
         return 1;
       }
       printf("User: %s\n", username);
@@ -212,7 +216,7 @@ int main(int argc , char *argv[]){
         /********* PORT *********/
         char port[MAX_LINE];
         if( receiveString(client_sock, port) < 0){
-          perror("receive string failed");
+            printf("receive string failed");
           return 1;
         }
         int portN = atoi(port);
@@ -224,7 +228,7 @@ int main(int argc , char *argv[]){
     char byte[1];
     byte[0] = 0x00;
     if( sendByte(client_sock, byte) < 0){ /* send byte */
-      perror("send byte failed");
+        printf("send byte failed");
       return 1;
     }
     close(client_sock); /*close client socket */
