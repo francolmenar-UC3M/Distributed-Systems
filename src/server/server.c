@@ -40,7 +40,7 @@ int sendToClient(int socket, char * msg);
 int sendToClient(int socket, char * msg){
     char  str [MAX_LINE];
     setMessage(msg, str);
-    send(sd, str, MAX_LINE, MSG_NOSIGNAL);
+    send(socket, str, MAX_LINE, MSG_NOSIGNAL);
     return 0;
 }
 
@@ -233,7 +233,8 @@ int process_data(int s_local, char* operation) {
 
         /*** PUERTO DE VERDAD ***/
         // sendToClient(SOCKET, queue_message->data.mes->text)
-          sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+          /*** TO DO CABRONES **/
+          send(user_connected->data->port, queue_message->data.mes->text, MAX_LINE, MSG_NOSIGNAL);
 
         printf("MESSAGE SENT\n");
       }
