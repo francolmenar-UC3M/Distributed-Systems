@@ -264,6 +264,7 @@ int connect_user(int s_local, char* username){
   else{ //User is disconnected
     printf("User connecting\n");
 
+    //Filling the data for the user node to be connected
     struct user *data_connected = (struct user*) malloc(sizeof(struct user));
     strcpy(data_connected->username, username);
     data_connected->status = TRUE;
@@ -280,27 +281,67 @@ int connect_user(int s_local, char* username){
 
 
     printf("Creating updated node\n");
-    //Create and update user node (now connected)
+    //Create the updated node with the data previously filled
     struct Node *user_connected = getNewNode(data_connected);
+    //Update node
     printf("Updating node\n");
     modify(user_connected);
 
     printf("CONNECT %s OK\n", username);
     printf("CHECKING PENDING MESSAGES\n");
 
-    while(isEmpty(user_connected->data->pending_messages) != 1){
+
+    if(isEmpty(user_connected->data->pending_messages) == 0){
       printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
-      NODE *queue_message = Dequeue(user_connected->data->pending_messages);
 
-      /*** PUERTO DE VERDAD ***/
-      // sendToClient(SOCKET, queue_message->data.mes->text)
-      //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+      //Preparing the socket to provide results
+      int sd;
+      struct sockaddr_in receiver_client;
 
-      printf("MESSAGE SENT\n");
+      sd = socket(AF_INET, SOCK_STREAM, 0);
+      if (sd == -1) {
+        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
+        return 3;
+      }
+
+      bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
+      memcpy(&(receiver_client.sin_addr), user_connected->data->ip_address, sizeof(struct in_addr));
+      receiver_client.sin_family = AF_INET;
+      receiver_client.sin_port = htons(user_connected->data->port);
+
+      printf("EN EL PUTO PUERTO: %d\n", user_connected->data->port);
+
+      if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
+        return 3;
+      }
+
+      char msg_id_in_char[11];
+      char * send_message = "SEND_MESSAGE";
+
+      while(isEmpty(user_connected->data->pending_messages) != 1){
+
+        NODE *queue_message = Dequeue(user_connected->data->pending_messages);
+
+        /*** PUERTO DE VERDAD ***/
+        // sendToClient(SOCKET, queue_message->data.mes->text)
+        //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+        sprintf(msg_id_in_char, "%u", queue_message->data.mes->id);
+
+        sendToClient(sd, send_message);
+        sendToClient(sd, queue_message->data.mes->from_user);
+        sendToClient(sd, msg_id_in_char);
+        sendToClient(sd, queue_message->data.mes->text);
+
+        printf("SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
+
+        printf("MESSAGE SENT\n");
+      }
+      printf("adios\n");
     }
-    printf("adios\n");
-    return 0;
   }
+
+  return 0;
+
 }
 
 
