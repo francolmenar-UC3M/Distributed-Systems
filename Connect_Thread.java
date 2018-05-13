@@ -83,7 +83,7 @@ public class Connect_Thread extends Thread {
             System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
-        System.out.print("c> MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END");
+        System.out.print("MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg + "\n   END\nc>");
         return true;
     }
 

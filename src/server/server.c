@@ -232,6 +232,13 @@ void* process_request(void* s) {
   return_code = process_data(s_local, operation);
 
   send(s_local, &return_code, 1, MSG_NOSIGNAL);
+
+  /* If we are sending a message, we also return to the sender the message id */
+  if(strcmp(operation, "SEND\0") == 0){
+    char id_toClient[MAX_LINE];
+    sprintf(id_toClient, "%u", (next_message_id-1));
+    sendToClient(s_local, id_toClient);
+  }
   close(s_local);
   pthread_exit(0);
 
@@ -241,7 +248,6 @@ void* process_request(void* s) {
 
 
 int connect_user(int s_local, char* username){
-  printf("Entering CONNECT\n");
 
   struct sockaddr_in client_addr;
   socklen_t size;
@@ -262,7 +268,6 @@ int connect_user(int s_local, char* username){
     return 2;
   }
   else{ //User is disconnected
-    printf("User connecting\n");
 
     //Filling the data for the user node to be connected
     struct user *data_connected = (struct user*) malloc(sizeof(struct user));
@@ -276,15 +281,11 @@ int connect_user(int s_local, char* username){
       return 2;
     }
     data_connected->port = atoi(argument2);
-    printf("EL PUERTO BUENO ES: %d\n", data_connected->port);
     data_connected->pending_messages = user_node->data->pending_messages;
 
-
-    printf("Creating updated node\n");
     //Create the updated node with the data previously filled
     struct Node *user_connected = getNewNode(data_connected);
     //Update node
-    printf("Updating node\n");
     modify(user_connected);
 
     printf("CONNECT %s OK\n", username);
@@ -298,27 +299,25 @@ int connect_user(int s_local, char* username){
       int sd;
       struct sockaddr_in receiver_client;
 
-      sd = socket(AF_INET, SOCK_STREAM, 0);
-      if (sd == -1) {
-        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
-        return 3;
-      }
-
-      bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
-      memcpy(&(receiver_client.sin_addr), user_connected->data->ip_address, sizeof(struct in_addr));
-      receiver_client.sin_family = AF_INET;
-      receiver_client.sin_port = htons(user_connected->data->port);
-
-      printf("EN EL PUTO PUERTO: %d\n", user_connected->data->port);
-
-      if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
-        return 3;
-      }
-
       char msg_id_in_char[11];
       char * send_message = "SEND_MESSAGE";
 
       while(isEmpty(user_connected->data->pending_messages) != 1){
+
+        sd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sd == -1) {
+          /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
+          return 3;
+        }
+
+        bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
+        memcpy(&(receiver_client.sin_addr), user_connected->data->ip_address, sizeof(struct in_addr));
+        receiver_client.sin_family = AF_INET;
+        receiver_client.sin_port = htons(user_connected->data->port);
+
+        if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
+          return 3;
+        }
 
         NODE *queue_message = Dequeue(user_connected->data->pending_messages);
 
@@ -332,11 +331,10 @@ int connect_user(int s_local, char* username){
         sendToClient(sd, msg_id_in_char);
         sendToClient(sd, queue_message->data.mes->text);
 
-        printf("SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
+        close(sd);
 
-        printf("MESSAGE SENT\n");
+        printf("SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
       }
-      printf("adios\n");
     }
   }
 
@@ -456,11 +454,7 @@ int send_message(char* sender, char* receiver, char* message){
       printf("MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
       return 0;
     } else {
-      // Receiver connected
-      // receiver_message = Dequeue(search(receiver)->data->pending_messages);
-      // SEND_MESSAGE
-      // QUIEN ENVIA
-      // MENSAJE
+
       int sd;
       struct sockaddr_in receiver_client;
 
@@ -474,8 +468,6 @@ int send_message(char* sender, char* receiver, char* message){
       memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
       receiver_client.sin_family = AF_INET;
       receiver_client.sin_port = htons(receiverNode->data->port);
-
-      printf("EN EL PUTO PUERTO: %d\n", receiverNode->data->port);
 
       if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
         return 3;
@@ -492,13 +484,5 @@ int send_message(char* sender, char* receiver, char* message){
 
       printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }
-
-
-    //The message is sent to the IP: port indicated in the user input.
-
-    //The message is sent indicating the corresponding identifier.
-
-    //send(receiver, &mierdas, sizeof(int), MSG_NOSIGNAL);
-
     return 0;
 }
