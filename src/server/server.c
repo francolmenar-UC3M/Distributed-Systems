@@ -31,6 +31,7 @@ pthread_cond_t cond_msg;
 int sock_not_free = 1;
 
 void* process_request(void* s);
+int connect_user(int s_local, char* username);
 int disconnect(char* username);
 int unregister(char* username);
 int send_message(char* sender, char* receiver, char* message);
@@ -178,69 +179,7 @@ int process_data(int s_local, char* operation) {
     return unregister(argument1);
 
   } else if (strcmp(operation, "CONNECT\0") == 0) {
-    //struct Node *?????user_node = (struct Node*)malloc(sizeof(struct user));
-    //memcpy((void*) user_node, (void*) search(username), sizeof(struct Node));
-    printf("Entering CONNECT\n");
-
-    struct sockaddr_in client_addr;
-    socklen_t size;
-    size = sizeof(struct sockaddr_in);
-    getpeername(s_local, (struct sockaddr *)&client_addr, &size);
-
-    struct Node *user_node;
-    user_node = search(argument1);
-
-    //User does not exist
-    if(user_node == NULL){
-      printf("CONNECT %s FAIL\n", argument1);
-      return 1;
-    }
-    //User is already connected
-    if(user_node->data->status != 0){
-      printf("CONNECT %s FAIL\n", argument1);
-      return 2;
-    }
-    else{ //User is disconnected
-      printf("User connecting\n");
-
-      struct user *data_connected = (struct user*) malloc(sizeof(struct user));
-      strcpy(data_connected->username, argument1);
-      data_connected->status = TRUE;
-      data_connected->ip_address = &client_addr.sin_addr;
-
-      char argument2[MAX_LINE];
-      if (readLine(s_local, argument2, MAX_LINE) == -1) {
-        fprintf(stderr, "ERROR reading line\n");
-        return 2;
-      }
-      data_connected->port = atoi(argument2);
-      printf("EL PUERTO BUENO ES: %d\n", data_connected->port);
-      data_connected->pending_messages = user_node->data->pending_messages;
-
-
-      printf("Creating updated node\n");
-      //Create and update user node (now connected)
-      struct Node *user_connected = getNewNode(data_connected);
-      printf("Updating node\n");
-      modify(user_connected);
-
-      printf("CONNECT %s OK\n", argument1);
-      printf("CHECKING PENDING MESSAGES\n");
-
-      while(isEmpty(user_connected->data->pending_messages) != 1){
-        printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
-        NODE *queue_message = Dequeue(user_connected->data->pending_messages);
-
-        /*** PUERTO DE VERDAD ***/
-        // sendToClient(SOCKET, queue_message->data.mes->text)
-          /*** TO DO CABRONES **/
-          send(user_connected->data->port, queue_message->data.mes->text, MAX_LINE, MSG_NOSIGNAL);
-
-        printf("MESSAGE SENT\n");
-      }
-      printf("adios\n");
-      return 0;
-    }
+    return connect_user(s_local, argument1);
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
@@ -298,6 +237,77 @@ void* process_request(void* s) {
 
   return 0;
 }
+
+
+
+int connect_user(int s_local, char* username){
+  printf("Entering CONNECT\n");
+
+  struct sockaddr_in client_addr;
+  socklen_t size;
+  size = sizeof(struct sockaddr_in);
+  getpeername(s_local, (struct sockaddr *)&client_addr, &size);
+
+  struct Node *user_node;
+  user_node = search(username);
+
+  //User does not exist
+  if(user_node == NULL){
+    printf("CONNECT %s FAIL\n", username);
+    return 1;
+  }
+  //User is already connected
+  if(user_node->data->status != 0){
+    printf("CONNECT %s FAIL\n", username);
+    return 2;
+  }
+  else{ //User is disconnected
+    printf("User connecting\n");
+
+    struct user *data_connected = (struct user*) malloc(sizeof(struct user));
+    strcpy(data_connected->username, username);
+    data_connected->status = TRUE;
+    data_connected->ip_address = &client_addr.sin_addr;
+
+    char argument2[MAX_LINE];
+    if (readLine(s_local, argument2, MAX_LINE) == -1) {
+      fprintf(stderr, "ERROR reading line\n");
+      return 2;
+    }
+    data_connected->port = atoi(argument2);
+    printf("EL PUERTO BUENO ES: %d\n", data_connected->port);
+    data_connected->pending_messages = user_node->data->pending_messages;
+
+
+    printf("Creating updated node\n");
+    //Create and update user node (now connected)
+    struct Node *user_connected = getNewNode(data_connected);
+    printf("Updating node\n");
+    modify(user_connected);
+
+    printf("CONNECT %s OK\n", username);
+    printf("CHECKING PENDING MESSAGES\n");
+
+    while(isEmpty(user_connected->data->pending_messages) != 1){
+      printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
+      NODE *queue_message = Dequeue(user_connected->data->pending_messages);
+
+      /*** PUERTO DE VERDAD ***/
+      // sendToClient(SOCKET, queue_message->data.mes->text)
+      //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
+
+      printf("MESSAGE SENT\n");
+    }
+    printf("adios\n");
+    return 0;
+  }
+}
+
+
+
+
+
+
 
 
 int disconnect(char* username){
