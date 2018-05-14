@@ -225,26 +225,26 @@ int process_data(int s_local, char* operation) {
     } else if (strcmp(operation, "SENDATTACH\0") == 0) {
       /* FILE NAME */
       char argument4[MAX_LINE];
-      /* FILE SIZE */
       if (readLine(s_local, argument4, MAX_LINE) == -1) {
         fprintf(stderr, "ERROR reading line\n");
         return 2;
       }
-      /* FILE CONTENT */
-      char argument6[MAX_LINE];
-      if (readLine(s_local, argument6, MAX_LINE) == -1) {
+
+        /* FILE SIZE */
+        char argument5[4];
+        recv(s_local, argument5, 4, 0);
+
+        int size = ntohl(*((int *) &argument5));
+
+
+        /* FILE CONTENT */
+      char argument6[size];
+      if (readLine(s_local, argument6, size) == -1) {
               fprintf(stderr, "ERROR reading line\n");
               return 2;
             }
-      /*
-      if (readLine(s_local, argument6, argument5) == -1) {
-        fprintf(stderr, "ERROR reading line\n");
-        return 2;
-      }
-      */
 
-      printf("FILE CONTENT: %s\n", argument6);
-      /* sendAttach(sender, receiver, fileName, fileContent) */
+
       return sendAttach(argument1, argument2, argument3, argument4, argument6);
     } else {
       fprintf(stderr, "s> ERROR MESSAGE FORMAT");
