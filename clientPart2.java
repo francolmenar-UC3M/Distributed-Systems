@@ -165,31 +165,34 @@ class clientPart2 {
         }
     }
 
-    /**
-     * Send an File to the server
-     *
-     * @param socket: the socket used in the communication
-     * @param fileName: name of the file to send
-     */
-    private static void sendFile(Socket socket, String fileName) {
+    private static String readFile(String fileName){
+        String key = "";
+
+        FileReader file = null;
         try {
-            File myFile = new File (fileName);
-            FileInputStream fis = new FileInputStream(fileName);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-
-            byte [] mybytearray  = new byte [(int)myFile.length()];
-            bis.read(mybytearray,0,mybytearray.length);
-
-            OutputStream os = socket.getOutputStream();
-            os.write(mybytearray,0,mybytearray.length);
-            os.flush();
-
+            file = new FileReader(fileName);
         } catch (FileNotFoundException e) {
-            System.out.println("c> Error sending the data to the server");
-            return;
-        } catch (IOException e) {
-            System.out.println("c> Error sending the data to the server");
+            e.printStackTrace();
         }
+        BufferedReader reader = new BufferedReader(file);
+
+        String line = null;
+        try {
+            line = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        while (line != null) {
+            key += line;
+            try {
+                line = reader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println(key); // so key works
+        return key;
     }
 
     /**
@@ -223,10 +226,10 @@ class clientPart2 {
                 sendString(socket, message); // If the operation is a SEND, the message is sent too
 
                 if(operation.equals(SENDATTACH)){ // send the file to the server
-                    File myFile = new File (fileName);
                     sendString(socket, fileName); // send the fileName
-                    sendInt(socket, (int) myFile.length()); // Send the length of the file
-                    sendFile(socket, fileName); // send the content of the file
+                    String fileRead = readFile(fileName);
+                    sendInt(socket, fileRead.length()); // Send the length of the file
+                    sendString(socket, fileRead); // send the content of the file
                 }
             }
 
