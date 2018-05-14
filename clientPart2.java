@@ -152,6 +152,7 @@ class clientPart2 {
             DataOutputStream outputObject = new DataOutputStream(socket.getOutputStream());
 
             outputObject.writeInt(msg); // write the message in the socket
+            outputObject.flush();
 
         }catch (IOException e) {
             System.out.println("c> Error sending the data to the server");
@@ -165,7 +166,7 @@ class clientPart2 {
         try {
             file = new FileReader(fileName);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            return null;
         }
         BufferedReader reader = new BufferedReader(file);
 
@@ -173,7 +174,7 @@ class clientPart2 {
         try {
             line = reader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            return null;
         }
 
         while (line != null) {
@@ -181,7 +182,7 @@ class clientPart2 {
             try {
                 line = reader.readLine();
             } catch (IOException e) {
-                e.printStackTrace();
+                return null;
             }
         }
         return key;
@@ -220,9 +221,8 @@ class clientPart2 {
                 if(operation.equals(SENDATTACH)){ // send the file to the server
                     sendString(socket, fileName); // send the fileName
                     String fileRead = readFile(fileName);
-                    System.out.println(fileRead); // so key works
-                    sendInt(socket, fileRead.length() + 1); // Send the length of the file
-                    sendString(socket, fileRead); // send the content of the file
+                    //sendInt(socket, fileRead.length()); // Send the length of the file
+                    sendString(socket, fileRead.substring(0,100)); // send the content of the file
                 }
             }
 
