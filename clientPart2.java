@@ -172,24 +172,33 @@ class clientPart2 {
      * @param fileName: name of the file to send
      */
     private static void sendFile(Socket socket, String fileName) {
+        String key = "";
+
+        FileReader file = null;
         try {
-            File myFile = new File (fileName);
-            FileInputStream fis = new FileInputStream(fileName);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-
-            byte [] mybytearray  = new byte [(int)myFile.length()];
-            bis.read(mybytearray,0,mybytearray.length);
-
-            OutputStream os = socket.getOutputStream();
-            os.write(mybytearray,0,mybytearray.length);
-            os.flush();
-
+            file = new FileReader(fileName);
         } catch (FileNotFoundException e) {
-            System.out.println("c> Error sending the data to the server");
-            return;
-        } catch (IOException e) {
-            System.out.println("c> Error sending the data to the server");
+            e.printStackTrace();
         }
+        BufferedReader reader = new BufferedReader(file);
+
+        String line = null;
+        try {
+            line = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        while (line != null) {
+                key += line;
+            try {
+                line = reader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println(key); // so key works
+        sendString(socket, key);
     }
 
     /**
