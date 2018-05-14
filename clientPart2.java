@@ -153,14 +153,7 @@ class clientPart2 {
 
             outputObject.writeInt(msg); // write the message in the socket
 
-            socket.close(); // close the socket
-            outputObject.close(); // close the outputObject
-
-        } catch (SocketException e) {
-            System.out.println("c> Error sending the data to the server");
-            return;
-
-        } catch (IOException e) {
+        }catch (IOException e) {
             System.out.println("c> Error sending the data to the server");
         }
     }
@@ -191,7 +184,6 @@ class clientPart2 {
                 e.printStackTrace();
             }
         }
-        System.out.println(key); // so key works
         return key;
     }
 
@@ -228,6 +220,7 @@ class clientPart2 {
                 if(operation.equals(SENDATTACH)){ // send the file to the server
                     sendString(socket, fileName); // send the fileName
                     String fileRead = readFile(fileName);
+                    System.out.println(fileRead); // so key works
                     sendInt(socket, fileRead.length() + 1); // Send the length of the file
                     sendString(socket, fileRead); // send the content of the file
                 }
