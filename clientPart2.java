@@ -165,13 +165,7 @@ class clientPart2 {
         }
     }
 
-    /**
-     * Send an File to the server
-     *
-     * @param socket: the socket used in the communication
-     * @param fileName: name of the file to send
-     */
-    private static void sendFile(Socket socket, String fileName) {
+    private static String readFile(String fileName){
         String key = "";
 
         FileReader file = null;
@@ -190,7 +184,7 @@ class clientPart2 {
         }
 
         while (line != null) {
-                key += line;
+            key += line;
             try {
                 line = reader.readLine();
             } catch (IOException e) {
@@ -198,7 +192,7 @@ class clientPart2 {
             }
         }
         System.out.println(key); // so key works
-        sendString(socket, key);
+        return key;
     }
 
     /**
@@ -232,10 +226,10 @@ class clientPart2 {
                 sendString(socket, message); // If the operation is a SEND, the message is sent too
 
                 if(operation.equals(SENDATTACH)){ // send the file to the server
-                    File myFile = new File (fileName);
                     sendString(socket, fileName); // send the fileName
-                    sendInt(socket, (int) myFile.length()); // Send the length of the file
-                    sendFile(socket, fileName); // send the content of the file
+                    String fileRead = readFile(fileName);
+                    sendInt(socket, fileRead.length()); // Send the length of the file
+                    sendString(socket, fileRead); // send the content of the file
                 }
             }
 
