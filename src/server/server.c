@@ -184,7 +184,6 @@ int process_data(int s_local, char* operation) {
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
   } else if (strcmp(operation, "SEND\0") == 0) {
-    printf("entro\n");
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
@@ -198,10 +197,12 @@ int process_data(int s_local, char* operation) {
     //assign receiver
     //assign message
     //send_message(username, receiver, message);
+    /*
     printf("OP: %s\n", operation);
     printf("ARG1: %s\n", argument1);
     printf("ARG2: %s\n", argument2);
     printf("ARG3: %s\n", argument3);
+    */
     return send_message(argument1, argument2, argument3);
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
@@ -289,11 +290,8 @@ int connect_user(int s_local, char* username){
     modify(user_connected);
 
     printf("CONNECT %s OK\n", username);
-    printf("CHECKING PENDING MESSAGES\n");
-
 
     if(isEmpty(user_connected->data->pending_messages) == 0){
-      printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
 
       //Preparing the socket to provide results
       int sd;
