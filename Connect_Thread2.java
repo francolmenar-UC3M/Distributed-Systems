@@ -9,7 +9,7 @@ public class Connect_Thread2 extends Thread {
 
     private static ServerSocket serverSocket; // socket to listen to the server
 
-    public Connect_Thread(ServerSocket serverSocket){
+    public Connect_Thread2(ServerSocket serverSocket){
         this.serverSocket = serverSocket;
     }
 
