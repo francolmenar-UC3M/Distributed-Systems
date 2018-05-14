@@ -3,4 +3,5 @@ struct message {
     char from_user[256];
     char to_user[256];
     char text[256];
+    char fileName[256];
 };
