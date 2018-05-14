@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import gnu.getopt.Getopt;
 
-class client {
+class clientPart2 {
 
     /* ******************** TYPES ********************* */
 
@@ -34,7 +34,7 @@ class client {
 
     private static ServerSocket javaServerPort = null;
     private static int _port = -1;
-    private static Connect_Thread thread;
+    private static Connect_Thread2 thread;
 
     private static final String REGISTER = "REGISTER";
     private static final String UNREGISTER = "UNREGISTER";
@@ -332,7 +332,7 @@ class client {
                 disconnect(userName); // disconnect the current user
             }
             javaServerPort = new ServerSocket(0); // socket to listen to the server
-            thread = new Connect_Thread(javaServerPort);
+            thread = new Connect_Thread2(javaServerPort);
             thread.start();
             if((dealWithErrors(registerCommunication(user, CONNECT,Integer.toString(javaServerPort.getLocalPort()), "NONE", "-1"), msg)) == RC.OK){ userName = user;} // Connect the user
         } catch (IOException e) {
