@@ -226,23 +226,23 @@ int process_data(int s_local, char* operation) {
       /* FILE NAME */
       char argument4[MAX_LINE];
       /* FILE SIZE */
-      int argument5 = 0;
       if (readLine(s_local, argument4, MAX_LINE) == -1) {
         fprintf(stderr, "ERROR reading line\n");
         return 2;
       }
-      argument5 = receiveInt(s_local);
       /* FILE CONTENT */
-      char argument6[argument5 + 1];
-      argument6[argument5] = '\0';
-      receiveString(s_local, argument6);
+      char argument6[MAX_LINE];
+      if (readLine(s_local, argument6, MAX_LINE) == -1) {
+              fprintf(stderr, "ERROR reading line\n");
+              return 2;
+            }
       /*
       if (readLine(s_local, argument6, argument5) == -1) {
         fprintf(stderr, "ERROR reading line\n");
         return 2;
       }
       */
-      printf("FILE SIZE: %d\n", argument5);
+
       printf("FILE CONTENT: %s\n", argument6);
       /* sendAttach(sender, receiver, fileName, fileContent) */
       return sendAttach(argument1, argument2, argument3, argument4, argument6);
