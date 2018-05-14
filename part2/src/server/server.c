@@ -39,6 +39,7 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
 int setMessage(char * str, char * dest);
 int sendToClient(int socket, char * msg);
 int receiveInt(int socket);
+int receiveString(int sock, char* input);
 
 int sendToClient(int socket, char * msg){
     char  str [MAX_LINE];
@@ -53,6 +54,26 @@ int setMessage(char *str, char * dest){
     strcpy(msg, str);
     strcpy(dest, msg);
     return 0;
+}
+
+/* Read a string from the given socket
+ *
+ * @param sock: the socket we are using to transfer data
+ * @return -1 if error
+ */
+int receiveString(int sock, char* input) {
+  memset(input, '\0', sizeof(*input)); /* end of string char */
+
+
+  int k = 0; /* no se por qué se pone esto */
+  while ( 1 ) { /* reading from the socket */
+    int nbytes = recv(sock, &input[k], 1, 0);
+    if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
+    if ( nbytes ==  0 ) { break; }
+    if ( input[k] ==  '\0' ) { break; } /* end of string */
+      k++;
+  }
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -212,11 +233,17 @@ int process_data(int s_local, char* operation) {
       }
       argument5 = receiveInt(s_local);
       /* FILE CONTENT */
-      char argument6[argument5];
-      if (readLine(s_local, argument6, MAX_LINE) == -1) {
+      char argument6[argument5 + 1];
+      argument6[argument5] = '\0';
+      receiveString(s_local, argument6);
+      /*
+      if (readLine(s_local, argument6, argument5) == -1) {
         fprintf(stderr, "ERROR reading line\n");
         return 2;
       }
+      */
+      printf("FILE SIZE: %d\n", argument5);
+      printf("FILE CONTENT: %s\n", argument6);
       /* sendAttach(sender, receiver, fileName, fileContent) */
       return sendAttach(argument1, argument2, argument3, argument4, argument6);
     } else {
@@ -512,7 +539,10 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
     if(senderNode->data->status == FALSE){
       return 2;
     }
-
+    printf("SENDER: %s\n", sender);
+    printf("RECEIVER: %s\n", receiver);
+    printf("MESSAGE: %s\n", message);
+    printf("FILENAME: %s\n", fileName);
     printf("FILE CONTENT: %s\n", fileContent);
 
     // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!

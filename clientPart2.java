@@ -228,7 +228,7 @@ class clientPart2 {
                 if(operation.equals(SENDATTACH)){ // send the file to the server
                     sendString(socket, fileName); // send the fileName
                     String fileRead = readFile(fileName);
-                    sendInt(socket, fileRead.length()); // Send the length of the file
+                    sendInt(socket, fileRead.length() + 1); // Send the length of the file
                     sendString(socket, fileRead); // send the content of the file
                 }
             }
