@@ -2,8 +2,12 @@
 #include <stdio.h>
 #include <pthread.h>
 
+#ifndef TRUE
 #define TRUE  1
+#endif
+#ifndef FALSE
 #define FALSE	0
+#endif
 
 pthread_mutex_t lock;
 

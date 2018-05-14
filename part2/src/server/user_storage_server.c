@@ -5,21 +5,28 @@
  */
 
 #include "user_storage.h"
-#include "dlinkedlist.c"
-#include "queue.c"
 
-#include "message.h"
-#include "user.h"
+#include "dlinkedlist.c"
+
+Node* head_users;
+Node* head_messages;
+
+unsigned int next_message_id;
+
+pthread_mutex_t message_id_lock;
 
 bool_t
 init_1_svc(int *result, struct svc_req *rqstp)
 {
 	bool_t retval;
 
-	/*
-	 * insert server code here
-	 */
-	 *result = 0;
+	pthread_mutex_init(&message_id_lock, NULL);
+	next_message_id = 0;
+
+	destroyList(head_users);
+	destroyList(head_messages);
+
+	*result = 0;
 
 	return retval;
 }
@@ -29,7 +36,7 @@ register_user_1_svc(char *username, int *result,  struct svc_req *rqstp)
 {
 	bool_t retval;
 
-	 if (search(username) != NULL) {
+	 if (search_user(head_users, username) != NULL) {
      printf("s> REGISTER %s FAIL\n", username);
 		 *result = 1;
      // return 1;
@@ -43,8 +50,8 @@ register_user_1_svc(char *username, int *result,  struct svc_req *rqstp)
      new_user->pending_messages = ConstructQueue(10);
      new_user->last_message = 0;
 
-     Node* new_node = getNewNode(new_user);
-     insert(new_node);
+     Node* new_node = getNewNode((void*)new_user);
+     insert_user(head_users, new_node);
      printf("s> REGISTER %s OK\n", username);
    }
    // return 0;
@@ -59,14 +66,14 @@ unregister_user_1_svc(char *username, int *result,  struct svc_req *rqstp)
 	bool_t retval;
 
 	/* Succesful unregister */
-  if(delete(username) == 0){
+  if(delete_user(head_users, username) == 0){
     printf("s> UNREGISTER %s OK\n", username);
     // return 0;
 		*result = 0;
 		return retval;
   }
   /* ERROR: user is not found in the data structure */
-  else if(delete(username) == -1){
+  else if(delete_user(head_users, username) == -1){
     printf("s> UNREGISTER %s FAIL\n", username);
     // return 1;
 		*result = 1;
@@ -89,7 +96,7 @@ get_user_1_svc(char *username, struct user *usr, int *result,  struct svc_req *r
 	bool_t retval;
 
 	struct Node *user_node;
-	user_node = search(username);
+	user_node = search_user(head_users, username);
 
 	if (user_node == NULL) {
 		*result = 1;
@@ -110,20 +117,20 @@ add_message_1_svc(struct message msg, int *result,  struct svc_req *rqstp)
 {
 	bool_t retval;
 
-	 if ((strlen(msg.text)+1) > MAX_LINE) {
+	 if ((strlen(msg.text)+1) > MAXSIZE) {
 	 	*result = 2;
 		return retval;
 	 }
 
-	 Node* senderNode = search(msg.from_user);
-	 Node* receiverNode = search(msg.to_user);
+	 Node* senderNode = search_user(head_users, msg.from_user);
+	 Node* receiverNode = search_user(head_users, msg.to_user);
 
 	 if((senderNode == NULL) || (receiverNode == NULL)) {
 		 *result = 1;
 		 return retval;
 	 }
 
-	 if (senderNode->data->status == 0) {
+	 if (((struct user*)senderNode->data)->status == 0) {
 	 		*result = 2;
 			return retval;
 	 }
@@ -131,7 +138,9 @@ add_message_1_svc(struct message msg, int *result,  struct svc_req *rqstp)
 	 NODE *receiver_message = malloc(sizeof(NODE));
 	 receiver_message->data.mes = &msg;
 
-	 Enqueue(receiverNode->data->pending_messages, receiver_message);
+	 insert_msg(head_messages, (void*)&msg);
+
+	 Enqueue(((struct user*)receiverNode->data)->pending_messages, receiver_message);
 	 *result = 0;
 
 	return retval;
@@ -142,11 +151,9 @@ get_total_messages_1_svc(char *username, int *result,  struct svc_req *rqstp)
 {
 	bool_t retval;
 
-	/*
-	 * insert server code here
-	 */
-
-
+	int count = 0;
+	count = get_total_messages_by_user(head_messages, username);
+	*result = count;
 
 	return retval;
 }
@@ -159,6 +166,18 @@ get_message_1_svc(char *username, u_int msg_id, char *md5, struct message *msg, 
 	/*
 	 * insert server code here
 	 */
+	 Node* mesg;
+	 mesg = search_msg(head_messages, msg_id);
+
+	 if (msg == NULL) {
+	 	*result = 1;
+		return retval;
+	 }
+
+	 /* cALCULATE MD5*/
+	 /* strcpy(md5, md5calculated) */
+	 memcpy(msg, mesg->data, sizeof(struct message));
+	 *result = 0;
 
 	return retval;
 }
