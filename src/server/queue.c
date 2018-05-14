@@ -33,13 +33,11 @@ NODE *Dequeue(Queue *pQueue);
 int isEmpty(Queue* pQueue);
 
 Queue *ConstructQueue(int limit) {
-    printf("Entering CONSTRUCT\n");
     if(pthread_mutex_init(&lock, NULL) != 0){
       printf("Mutex failed\n");
       return NULL;
     }
     pthread_mutex_lock(&lock);
-    printf("Mutex locked\n");
     Queue *queue = (Queue*) malloc(sizeof (Queue));
     if (queue == NULL) {
         pthread_mutex_unlock(&lock);
@@ -54,7 +52,6 @@ Queue *ConstructQueue(int limit) {
     queue->tail = NULL;
 
     pthread_mutex_unlock(&lock);
-    printf("Mutex unlocked\n");
     return queue;
 }
 
