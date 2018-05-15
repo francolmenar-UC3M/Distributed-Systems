@@ -1,3 +1,6 @@
+#ifndef USER_H
+#define USER_H
+
 #include <netinet/in.h>
 #include "queue.c"
 
@@ -9,3 +12,5 @@ struct user {
     Queue* pending_messages;
     unsigned int last_message;
 };
+
+#endif /* USER_H */

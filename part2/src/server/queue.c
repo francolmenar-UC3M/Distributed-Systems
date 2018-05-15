@@ -2,33 +2,29 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#ifndef TRUE
-#define TRUE  1
-#endif
-#ifndef FALSE
-#define FALSE	0
-#endif
+#include "user_storage.h"
+#include "queue.h"
 
 pthread_mutex_t lock;
 
 /* a link in the queue, holds the info and point to the next Node*/
-typedef struct {
-    //int info;
-    struct message* mes;
-} DATA;
-
-typedef struct Node_t {
-   DATA data;
-   struct Node_t *prev;
-} NODE;
-
-/* the HEAD of the Queue, hold the amount of node's that are in the queue*/
-typedef struct Queue {
-    NODE *head;
-    NODE *tail;
-    int size;
-    int limit;
-} Queue;
+// typedef struct {
+//     //int info;
+//     struct message* mes;
+// } DATA;
+//
+// typedef struct Node_t {
+//    DATA data;
+//    struct Node_t *prev;
+// } NODE;
+//
+// /* the HEAD of the Queue, hold the amount of node's that are in the queue*/
+// typedef struct Queue {
+//     NODE *head;
+//     NODE *tail;
+//     int size;
+//     int limit;
+// } Queue;
 
 Queue *ConstructQueue(int limit);
 void DestructQueue(Queue *queue);
@@ -37,13 +33,10 @@ NODE *Dequeue(Queue *pQueue);
 int isEmpty(Queue* pQueue);
 
 Queue *ConstructQueue(int limit) {
-    printf("Entering CONSTRUCT\n");
     if(pthread_mutex_init(&lock, NULL) != 0){
-      printf("Mutex failed\n");
       return NULL;
     }
     pthread_mutex_lock(&lock);
-    printf("Mutex locked\n");
     Queue *queue = (Queue*) malloc(sizeof (Queue));
     if (queue == NULL) {
         pthread_mutex_unlock(&lock);
@@ -58,7 +51,6 @@ Queue *ConstructQueue(int limit) {
     queue->tail = NULL;
 
     pthread_mutex_unlock(&lock);
-    printf("Mutex unlocked\n");
     return queue;
 }
 
@@ -134,6 +126,4 @@ int isEmpty(Queue* pQueue) {
         // pthread_mutex_unlock(&lock);
         return FALSE;
     }
-
-
 }

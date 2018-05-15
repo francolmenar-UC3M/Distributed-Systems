@@ -4,6 +4,8 @@
  * as a guideline for developing your own functions.
  */
 
+#include "queue.h"
+#include "dlinkedlist.h"
 #include "user_storage.h"
 
 
@@ -11,30 +13,20 @@ void
 userstorage_1(char *host)
 {
 	CLIENT *clnt;
-	enum clnt_stat retval_1;
-	int result_1;
-	enum clnt_stat retval_2;
-	int result_2;
-	char register_user_1_username;
-	enum clnt_stat retval_3;
-	int result_3;
-	char unregister_user_1_username;
-	enum clnt_stat retval_4;
-	int result_4;
-	char get_user_1_username;
-	struct user  get_user_1_usr;
-	enum clnt_stat retval_5;
-	int result_5;
+	int  *result_1;
+	int  *result_2;
+	char *register_user_1_username;
+	int  *result_3;
+	char *unregister_user_1_username;
+	struct user  *result_4;
+	char *get_user_1_username;
+	int  *result_5;
 	struct message add_message_1_msg;
-	enum clnt_stat retval_6;
-	int result_6;
-	char get_total_messages_1_username;
-	enum clnt_stat retval_7;
-	int result_7;
-	char get_message_1_username;
+	int  *result_6;
+	char *get_total_messages_1_username;
+	struct message  *result_7;
+	char *get_message_1_username;
 	u_int  get_message_1_msg_id;
-	char get_message_1_md5;
-	struct message get_message_1_msg;
 
 #ifndef	DEBUG
 	clnt = clnt_create (host, USERSTORAGE, USERSTORAGEVER, "udp");
@@ -44,32 +36,32 @@ userstorage_1(char *host)
 	}
 #endif	/* DEBUG */
 
-	retval_1 = init_1(&result_1, clnt);
-	if (retval_1 != RPC_SUCCESS) {
+	result_1 = init_1(clnt);
+	if (result_1 == (int *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_2 = register_user_1(register_user_1_username, &result_2, clnt);
-	if (retval_2 != RPC_SUCCESS) {
+	result_2 = register_user_1(register_user_1_username, clnt);
+	if (result_2 == (int *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_3 = unregister_user_1(unregister_user_1_username, &result_3, clnt);
-	if (retval_3 != RPC_SUCCESS) {
+	result_3 = unregister_user_1(unregister_user_1_username, clnt);
+	if (result_3 == (int *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_4 = get_user_1(get_user_1_username, get_user_1_usr, &result_4, clnt);
-	if (retval_4 != RPC_SUCCESS) {
+	result_4 = get_user_1(get_user_1_username, clnt);
+	if (result_4 == (struct user *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_5 = add_message_1(add_message_1_msg, &result_5, clnt);
-	if (retval_5 != RPC_SUCCESS) {
+	result_5 = add_message_1(add_message_1_msg, clnt);
+	if (result_5 == (int *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_6 = get_total_messages_1(get_total_messages_1_username, &result_6, clnt);
-	if (retval_6 != RPC_SUCCESS) {
+	result_6 = get_total_messages_1(get_total_messages_1_username, clnt);
+	if (result_6 == (int *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_7 = get_message_1(get_message_1_username, get_message_1_msg_id, get_message_1_md5, get_message_1_msg, &result_7, clnt);
-	if (retval_7 != RPC_SUCCESS) {
+	result_7 = get_message_1(get_message_1_username, get_message_1_msg_id, clnt);
+	if (result_7 == (struct message *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
 #ifndef	DEBUG

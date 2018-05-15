@@ -4,9 +4,12 @@
  * as a guideline for developing your own functions.
  */
 
+#include <pthread.h>
+
 #include "user_storage.h"
 
-#include "dlinkedlist.c"
+#include "queue.h"
+#include "dlinkedlist.h"
 
 Node* head_users;
 Node* head_messages;
@@ -15,10 +18,10 @@ unsigned int next_message_id;
 
 pthread_mutex_t message_id_lock;
 
-bool_t
-init_1_svc(int *result, struct svc_req *rqstp)
+int *
+init_1_svc(struct svc_req *rqstp)
 {
-	bool_t retval;
+	static int  result;
 
 	pthread_mutex_init(&message_id_lock, NULL);
 	next_message_id = 0;
@@ -26,170 +29,149 @@ init_1_svc(int *result, struct svc_req *rqstp)
 	destroyList(head_users);
 	destroyList(head_messages);
 
-	*result = 0;
+	result = 0;
 
-	return retval;
+	return &result;
 }
 
-bool_t
-register_user_1_svc(char *username, int *result,  struct svc_req *rqstp)
+int *
+register_user_1_svc(char *username,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static int  result;
 
-	 if (search_user(head_users, username) != NULL) {
-     printf("s> REGISTER %s FAIL\n", username);
-		 *result = 1;
-     // return 1;
-		 return retval;
-   } else {
-     struct user *new_user = (struct user*)malloc(sizeof(struct user));
-     strcpy(new_user->username, username);
-     new_user->status = 0;
-     new_user->ip_address = NULL;
-     new_user->port = 0;
-     new_user->pending_messages = ConstructQueue(10);
-     new_user->last_message = 0;
+	if (search_user(head_users, username) != NULL) {
+		printf("s> REGISTER %s FAIL\n", username);
+		result = 1;
+		// return 1;
+		return &result;
+	} else {
+		struct user *new_user = (struct user*)malloc(sizeof(struct user));
+		strcpy(new_user->username, username);
+		new_user->status = 0;
+		new_user->ip_address = 0;
+		new_user->port = 0;
+		new_user->pending_messages = ConstructQueue(10);
+		new_user->last_message = 0;
 
-     Node* new_node = getNewNode((void*)new_user);
-     insert_user(head_users, new_node);
-     printf("s> REGISTER %s OK\n", username);
-   }
-   // return 0;
-	 *result = 0;
+		Node* new_node = getNewNode((void*)new_user);
+		insert_user(head_users, new_node);
+		printf("s> REGISTER %s OK\n", username);
+	}
+	// return 0;
+	result = 0;
 
-	return retval;
+	return &result;
 }
 
-bool_t
-unregister_user_1_svc(char *username, int *result,  struct svc_req *rqstp)
+int *
+unregister_user_1_svc(char *username,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static int  result;
 
 	/* Succesful unregister */
   if(delete_user(head_users, username) == 0){
     printf("s> UNREGISTER %s OK\n", username);
     // return 0;
-		*result = 0;
-		return retval;
+		result = 0;
+		return &result;
   }
   /* ERROR: user is not found in the data structure */
   else if(delete_user(head_users, username) == -1){
     printf("s> UNREGISTER %s FAIL\n", username);
     // return 1;
-		*result = 1;
-		return retval;
+		result = 1;
+		return &result;
   }
   /* ERROR: any other case */
   else{
     printf("s> UNREGISTER %s FAIL\n", username);
     // return 2;
-		*result = 2;
-		return retval;
+		result = 2;
+		return &result;
   }
 
-	return retval;
+	return &result;
 }
 
-bool_t
-get_user_1_svc(char *username, struct user *usr, int *result,  struct svc_req *rqstp)
+struct user *
+get_user_1_svc(char *username,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static struct user  result;
 
 	struct Node *user_node;
 	user_node = search_user(head_users, username);
 
 	if (user_node == NULL) {
-		*result = 1;
-		free(user_node);
-		return retval;
+		return NULL;
 	} else {
-		memcpy(usr, user_node->data, sizeof(struct user));
-		*result = 0;
-		free(user_node);
-		return retval;
+		result = *(struct user*)user_node->data;
+		return &result;
 	}
 
-	return retval;
+	return &result;
 }
 
-bool_t
-add_message_1_svc(struct message msg, int *result,  struct svc_req *rqstp)
+int *
+add_message_1_svc(struct message msg,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static int  result;
 
-	 if ((strlen(msg.text)+1) > MAXSIZE) {
-	 	*result = 2;
-		return retval;
-	 }
+	if ((strlen(msg.text)+1) > MAXSIZE) {
+	 result = 2;
+	 return &result;
+	}
 
-	 Node* senderNode = search_user(head_users, msg.from_user);
-	 Node* receiverNode = search_user(head_users, msg.to_user);
+	Node* senderNode = search_user(head_users, msg.from_user);
+	Node* receiverNode = search_user(head_users, msg.to_user);
 
-	 if((senderNode == NULL) || (receiverNode == NULL)) {
-		 *result = 1;
-		 return retval;
-	 }
+	if((senderNode == NULL) || (receiverNode == NULL)) {
+		result = 1;
+		return &result;
+	}
 
-	 if (((struct user*)senderNode->data)->status == 0) {
-	 		*result = 2;
-			return retval;
-	 }
+	if (((struct user*)senderNode->data)->status == 0) {
+		 result = 2;
+		 return &result;
+	}
 
-	 NODE *receiver_message = malloc(sizeof(NODE));
-	 receiver_message->data.mes = &msg;
+	NODE *receiver_message = malloc(sizeof(NODE));
+	receiver_message->data.mes = &msg;
 
-	 insert_msg(head_messages, (void*)&msg);
+	insert_msg(head_messages, (void*)&msg);
 
-	 Enqueue(((struct user*)receiverNode->data)->pending_messages, receiver_message);
-	 *result = 0;
+	Enqueue(((struct user*)receiverNode->data)->pending_messages, receiver_message);
+	result = 0;
 
-	return retval;
+	return &result;
 }
 
-bool_t
-get_total_messages_1_svc(char *username, int *result,  struct svc_req *rqstp)
+int *
+get_total_messages_1_svc(char *username,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static int  result;
 
 	int count = 0;
-	count = get_total_messages_by_user(head_messages, username);
-	*result = count;
+ 	count = get_total_messages_by_user(head_messages, username);
+ 	result = count;
 
-	return retval;
+	return &result;
 }
 
-bool_t
-get_message_1_svc(char *username, u_int msg_id, char *md5, struct message *msg, int *result,  struct svc_req *rqstp)
+struct message *
+get_message_1_svc(char *username, u_int msg_id,  struct svc_req *rqstp)
 {
-	bool_t retval;
+	static struct message  result;
 
-	/*
-	 * insert server code here
-	 */
 	 Node* mesg;
 	 mesg = search_msg(head_messages, msg_id);
 
-	 if (msg == NULL) {
-	 	*result = 1;
-		return retval;
+	 if (mesg == NULL) {
+		return NULL;
 	 }
 
 	 /* cALCULATE MD5*/
 	 /* strcpy(md5, md5calculated) */
-	 memcpy(msg, mesg->data, sizeof(struct message));
-	 *result = 0;
+	 result = *(struct message*)mesg->data;
 
-	return retval;
-}
-
-int
-userstorage_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
-{
-	xdr_free (xdr_result, result);
-
-	/*
-	 * Insert additional freeing code here, if needed
-	 */
-
-	return 1;
+	return &result;
 }

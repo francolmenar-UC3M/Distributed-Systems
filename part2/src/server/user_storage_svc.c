@@ -16,71 +16,62 @@
 #define SIG_PF void(*)(int)
 #endif
 
-int
-_init_1 (void  *argp, void *result, struct svc_req *rqstp)
+static int *
+_init_1 (void  *argp, struct svc_req *rqstp)
 {
-	return (init_1_svc(result, rqstp));
+	return (init_1_svc(rqstp));
 }
 
-int
-_register_user_1 (char  *argp, void *result, struct svc_req *rqstp)
+static int *
+_register_user_1 (char * *argp, struct svc_req *rqstp)
 {
-	return (register_user_1_svc(*argp, result, rqstp));
+	return (register_user_1_svc(*argp, rqstp));
 }
 
-int
-_unregister_user_1 (char  *argp, void *result, struct svc_req *rqstp)
+static int *
+_unregister_user_1 (char * *argp, struct svc_req *rqstp)
 {
-	return (unregister_user_1_svc(*argp, result, rqstp));
+	return (unregister_user_1_svc(*argp, rqstp));
 }
 
-int
-_get_user_1 (get_user_1_argument *argp, void *result, struct svc_req *rqstp)
+static struct user *
+_get_user_1 (char * *argp, struct svc_req *rqstp)
 {
-	return (get_user_1_svc(argp->username, argp->usr, result, rqstp));
+	return (get_user_1_svc(*argp, rqstp));
 }
 
-int
-_add_message_1 (struct message  *argp, void *result, struct svc_req *rqstp)
+static int *
+_add_message_1 (struct message  *argp, struct svc_req *rqstp)
 {
-	return (add_message_1_svc(*argp, result, rqstp));
+	return (add_message_1_svc(*argp, rqstp));
 }
 
-int
-_get_total_messages_1 (char  *argp, void *result, struct svc_req *rqstp)
+static int *
+_get_total_messages_1 (char * *argp, struct svc_req *rqstp)
 {
-	return (get_total_messages_1_svc(*argp, result, rqstp));
+	return (get_total_messages_1_svc(*argp, rqstp));
 }
 
-int
-_get_message_1 (get_message_1_argument *argp, void *result, struct svc_req *rqstp)
+static struct message *
+_get_message_1 (get_message_1_argument *argp, struct svc_req *rqstp)
 {
-	return (get_message_1_svc(argp->username, argp->msg_id, argp->md5, argp->msg, result, rqstp));
+	return (get_message_1_svc(argp->username, argp->msg_id, rqstp));
 }
 
 static void
 userstorage_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		char register_user_1_arg;
-		char unregister_user_1_arg;
-		get_user_1_argument get_user_1_arg;
+		char *register_user_1_arg;
+		char *unregister_user_1_arg;
+		char *get_user_1_arg;
 		struct message add_message_1_arg;
-		char get_total_messages_1_arg;
+		char *get_total_messages_1_arg;
 		get_message_1_argument get_message_1_arg;
 	} argument;
-	union {
-		int init_1_res;
-		int register_user_1_res;
-		int unregister_user_1_res;
-		int get_user_1_res;
-		int add_message_1_res;
-		int get_total_messages_1_res;
-		int get_message_1_res;
-	} result;
-	bool_t retval;
+	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
-	bool_t (*local)(char *, void *, struct svc_req *);
+	char *(*local)(char *, struct svc_req *);
 
 	switch (rqstp->rq_proc) {
 	case NULLPROC:
@@ -90,43 +81,43 @@ userstorage_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	case init:
 		_xdr_argument = (xdrproc_t) xdr_void;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_init_1;
+		local = (char *(*)(char *, struct svc_req *)) _init_1;
 		break;
 
 	case register_user:
-		_xdr_argument = (xdrproc_t) xdr_char;
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_register_user_1;
+		local = (char *(*)(char *, struct svc_req *)) _register_user_1;
 		break;
 
 	case unregister_user:
-		_xdr_argument = (xdrproc_t) xdr_char;
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_unregister_user_1;
+		local = (char *(*)(char *, struct svc_req *)) _unregister_user_1;
 		break;
 
 	case get_user:
-		_xdr_argument = (xdrproc_t) xdr_get_user_1_argument;
-		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_get_user_1;
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_user;
+		local = (char *(*)(char *, struct svc_req *)) _get_user_1;
 		break;
 
 	case add_message:
 		_xdr_argument = (xdrproc_t) xdr_message;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_add_message_1;
+		local = (char *(*)(char *, struct svc_req *)) _add_message_1;
 		break;
 
 	case get_total_messages:
-		_xdr_argument = (xdrproc_t) xdr_char;
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_get_total_messages_1;
+		local = (char *(*)(char *, struct svc_req *)) _get_total_messages_1;
 		break;
 
 	case get_message:
 		_xdr_argument = (xdrproc_t) xdr_get_message_1_argument;
-		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_get_message_1;
+		_xdr_result = (xdrproc_t) xdr_message;
+		local = (char *(*)(char *, struct svc_req *)) _get_message_1;
 		break;
 
 	default:
@@ -138,17 +129,14 @@ userstorage_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		svcerr_decode (transp);
 		return;
 	}
-	retval = (bool_t) (*local)((char *)&argument, (void *)&result, rqstp);
-	if (retval > 0 && !svc_sendreply(transp, (xdrproc_t) _xdr_result, (char *)&result)) {
+	result = (*local)((char *)&argument, rqstp);
+	if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result)) {
 		svcerr_systemerr (transp);
 	}
 	if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
 		fprintf (stderr, "%s", "unable to free arguments");
 		exit (1);
 	}
-	if (!userstorage_1_freeresult (transp, _xdr_result, (caddr_t) &result))
-		fprintf (stderr, "%s", "unable to free results");
-
 	return;
 }
 

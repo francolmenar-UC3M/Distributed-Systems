@@ -1,23 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
-#include "user.h"
-#include "message.h"
-
-#define MAXSIZE 256
-
-/* Definition of a node of the data structure */
-typedef struct Node  {
-    void* data;
-    struct Node* next;
-    struct Node* prev;
-} Node;
+#include "user_storage.h"
+#include "dlinkedlist.h"
 
 /* Head of the Doubly Linked List*/
 // Node* head;
-
-unsigned int next_message_id;
 
 pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 

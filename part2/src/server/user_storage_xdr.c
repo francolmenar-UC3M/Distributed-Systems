@@ -6,11 +6,133 @@
 #include "user_storage.h"
 
 bool_t
-xdr_get_user_1_argument (XDR *xdrs, get_user_1_argument *objp)
+xdr_DATA (XDR *xdrs, DATA *objp)
 {
-	 if (!xdr_pointer (xdrs, (char **)&objp->username, sizeof (char), (xdrproc_t) xdr_char))
+	register int32_t *buf;
+
+	 if (!xdr_pointer (xdrs, (char **)&objp->mes, sizeof (struct message), (xdrproc_t) xdr_message))
 		 return FALSE;
-	 if (!xdr_pointer (xdrs, (char **)&objp->usr, sizeof (struct user), (xdrproc_t) xdr_user))
+	return TRUE;
+}
+
+bool_t
+xdr_NODE (XDR *xdrs, NODE *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_DATA (xdrs, &objp->data))
+		 return FALSE;
+	 if (!xdr_pointer (xdrs, (char **)&objp->prev, sizeof (NODE), (xdrproc_t) xdr_NODE))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_Queue (XDR *xdrs, Queue *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_pointer (xdrs, (char **)&objp->head, sizeof (NODE), (xdrproc_t) xdr_NODE))
+		 return FALSE;
+	 if (!xdr_pointer (xdrs, (char **)&objp->tail, sizeof (NODE), (xdrproc_t) xdr_NODE))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->size))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->limit))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_message (XDR *xdrs, message *objp)
+{
+	register int32_t *buf;
+
+	int i;
+	 if (!xdr_u_int (xdrs, &objp->id))
+		 return FALSE;
+	 if (!xdr_vector (xdrs, (char *)objp->md5, 32,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
+	 if (!xdr_vector (xdrs, (char *)objp->from_user, 256,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
+	 if (!xdr_vector (xdrs, (char *)objp->to_user, 256,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
+	 if (!xdr_vector (xdrs, (char *)objp->text, 256,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_user (XDR *xdrs, user *objp)
+{
+	register int32_t *buf;
+
+	int i;
+
+	if (xdrs->x_op == XDR_ENCODE) {
+		 if (!xdr_vector (xdrs, (char *)objp->username, 256,
+			sizeof (char), (xdrproc_t) xdr_char))
+			 return FALSE;
+		buf = XDR_INLINE (xdrs, 3 * BYTES_PER_XDR_UNIT);
+		if (buf == NULL) {
+			 if (!xdr_int (xdrs, &objp->status))
+				 return FALSE;
+			 if (!xdr_int (xdrs, &objp->ip_address))
+				 return FALSE;
+			 if (!xdr_int (xdrs, &objp->port))
+				 return FALSE;
+
+		} else {
+		IXDR_PUT_LONG(buf, objp->status);
+		IXDR_PUT_LONG(buf, objp->ip_address);
+		IXDR_PUT_LONG(buf, objp->port);
+		}
+		 if (!xdr_pointer (xdrs, (char **)&objp->pending_messages, sizeof (Queue), (xdrproc_t) xdr_Queue))
+			 return FALSE;
+		 if (!xdr_u_int (xdrs, &objp->last_message))
+			 return FALSE;
+		return TRUE;
+	} else if (xdrs->x_op == XDR_DECODE) {
+		 if (!xdr_vector (xdrs, (char *)objp->username, 256,
+			sizeof (char), (xdrproc_t) xdr_char))
+			 return FALSE;
+		buf = XDR_INLINE (xdrs, 3 * BYTES_PER_XDR_UNIT);
+		if (buf == NULL) {
+			 if (!xdr_int (xdrs, &objp->status))
+				 return FALSE;
+			 if (!xdr_int (xdrs, &objp->ip_address))
+				 return FALSE;
+			 if (!xdr_int (xdrs, &objp->port))
+				 return FALSE;
+
+		} else {
+		objp->status = IXDR_GET_LONG(buf);
+		objp->ip_address = IXDR_GET_LONG(buf);
+		objp->port = IXDR_GET_LONG(buf);
+		}
+		 if (!xdr_pointer (xdrs, (char **)&objp->pending_messages, sizeof (Queue), (xdrproc_t) xdr_Queue))
+			 return FALSE;
+		 if (!xdr_u_int (xdrs, &objp->last_message))
+			 return FALSE;
+	 return TRUE;
+	}
+
+	 if (!xdr_vector (xdrs, (char *)objp->username, 256,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->status))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->ip_address))
+		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->port))
+		 return FALSE;
+	 if (!xdr_pointer (xdrs, (char **)&objp->pending_messages, sizeof (Queue), (xdrproc_t) xdr_Queue))
+		 return FALSE;
+	 if (!xdr_u_int (xdrs, &objp->last_message))
 		 return FALSE;
 	return TRUE;
 }
@@ -18,13 +140,9 @@ xdr_get_user_1_argument (XDR *xdrs, get_user_1_argument *objp)
 bool_t
 xdr_get_message_1_argument (XDR *xdrs, get_message_1_argument *objp)
 {
-	 if (!xdr_pointer (xdrs, (char **)&objp->username, sizeof (char), (xdrproc_t) xdr_char))
+	 if (!xdr_string (xdrs, &objp->username, ~0))
 		 return FALSE;
 	 if (!xdr_u_int (xdrs, &objp->msg_id))
-		 return FALSE;
-	 if (!xdr_pointer (xdrs, (char **)&objp->md5, sizeof (char), (xdrproc_t) xdr_char))
-		 return FALSE;
-	 if (!xdr_pointer (xdrs, (char **)&objp->msg, sizeof (struct message), (xdrproc_t) xdr_message))
 		 return FALSE;
 	return TRUE;
 }

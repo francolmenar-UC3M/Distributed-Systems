@@ -8,24 +8,53 @@
 
 #include <rpc/rpc.h>
 
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-struct get_user_1_argument {
-	char *username;
-	struct user *usr;
+struct DATA {
+	struct message *mes;
 };
-typedef struct get_user_1_argument get_user_1_argument;
+typedef struct DATA DATA;
+
+struct NODE {
+	DATA data;
+	struct NODE *prev;
+};
+typedef struct NODE NODE;
+
+struct Queue {
+	NODE *head;
+	NODE *tail;
+	int size;
+	int limit;
+};
+typedef struct Queue Queue;
+
+struct message {
+	u_int id;
+	char md5[32];
+	char from_user[256];
+	char to_user[256];
+	char text[256];
+};
+typedef struct message message;
+
+struct user {
+	char username[256];
+	int status;
+	int ip_address;
+	int port;
+	Queue *pending_messages;
+	u_int last_message;
+};
+typedef struct user user;
 
 struct get_message_1_argument {
 	char *username;
 	u_int msg_id;
-	char *md5;
-	struct message *msg;
 };
 typedef struct get_message_1_argument get_message_1_argument;
 
@@ -34,61 +63,69 @@ typedef struct get_message_1_argument get_message_1_argument;
 
 #if defined(__STDC__) || defined(__cplusplus)
 #define init 1
-extern  enum clnt_stat init_1(int *, CLIENT *);
-extern  bool_t init_1_svc(int *, struct svc_req *);
+extern  int * init_1(CLIENT *);
+extern  int * init_1_svc(struct svc_req *);
 #define register_user 2
-extern  enum clnt_stat register_user_1(char , int *, CLIENT *);
-extern  bool_t register_user_1_svc(char , int *, struct svc_req *);
+extern  int * register_user_1(char *, CLIENT *);
+extern  int * register_user_1_svc(char *, struct svc_req *);
 #define unregister_user 3
-extern  enum clnt_stat unregister_user_1(char , int *, CLIENT *);
-extern  bool_t unregister_user_1_svc(char , int *, struct svc_req *);
+extern  int * unregister_user_1(char *, CLIENT *);
+extern  int * unregister_user_1_svc(char *, struct svc_req *);
 #define get_user 4
-extern  enum clnt_stat get_user_1(char , struct user , int *, CLIENT *);
-extern  bool_t get_user_1_svc(char , struct user , int *, struct svc_req *);
+extern  struct user * get_user_1(char *, CLIENT *);
+extern  struct user * get_user_1_svc(char *, struct svc_req *);
 #define add_message 5
-extern  enum clnt_stat add_message_1(struct message , int *, CLIENT *);
-extern  bool_t add_message_1_svc(struct message , int *, struct svc_req *);
+extern  int * add_message_1(struct message , CLIENT *);
+extern  int * add_message_1_svc(struct message , struct svc_req *);
 #define get_total_messages 6
-extern  enum clnt_stat get_total_messages_1(char , int *, CLIENT *);
-extern  bool_t get_total_messages_1_svc(char , int *, struct svc_req *);
+extern  int * get_total_messages_1(char *, CLIENT *);
+extern  int * get_total_messages_1_svc(char *, struct svc_req *);
 #define get_message 7
-extern  enum clnt_stat get_message_1(char , u_int , char , struct message , int *, CLIENT *);
-extern  bool_t get_message_1_svc(char , u_int , char , struct message , int *, struct svc_req *);
+extern  struct message * get_message_1(char *, u_int , CLIENT *);
+extern  struct message * get_message_1_svc(char *, u_int , struct svc_req *);
 extern int userstorage_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
 #define init 1
-extern  enum clnt_stat init_1();
-extern  bool_t init_1_svc();
+extern  int * init_1();
+extern  int * init_1_svc();
 #define register_user 2
-extern  enum clnt_stat register_user_1();
-extern  bool_t register_user_1_svc();
+extern  int * register_user_1();
+extern  int * register_user_1_svc();
 #define unregister_user 3
-extern  enum clnt_stat unregister_user_1();
-extern  bool_t unregister_user_1_svc();
+extern  int * unregister_user_1();
+extern  int * unregister_user_1_svc();
 #define get_user 4
-extern  enum clnt_stat get_user_1();
-extern  bool_t get_user_1_svc();
+extern  struct user * get_user_1();
+extern  struct user * get_user_1_svc();
 #define add_message 5
-extern  enum clnt_stat add_message_1();
-extern  bool_t add_message_1_svc();
+extern  int * add_message_1();
+extern  int * add_message_1_svc();
 #define get_total_messages 6
-extern  enum clnt_stat get_total_messages_1();
-extern  bool_t get_total_messages_1_svc();
+extern  int * get_total_messages_1();
+extern  int * get_total_messages_1_svc();
 #define get_message 7
-extern  enum clnt_stat get_message_1();
-extern  bool_t get_message_1_svc();
+extern  struct message * get_message_1();
+extern  struct message * get_message_1_svc();
 extern int userstorage_1_freeresult ();
 #endif /* K&R C */
 
 /* the xdr functions */
 
 #if defined(__STDC__) || defined(__cplusplus)
-extern  bool_t xdr_get_user_1_argument (XDR *, get_user_1_argument*);
+extern  bool_t xdr_DATA (XDR *, DATA*);
+extern  bool_t xdr_NODE (XDR *, NODE*);
+extern  bool_t xdr_Queue (XDR *, Queue*);
+extern  bool_t xdr_message (XDR *, message*);
+extern  bool_t xdr_user (XDR *, user*);
 extern  bool_t xdr_get_message_1_argument (XDR *, get_message_1_argument*);
 
 #else /* K&R C */
-extern bool_t xdr_get_user_1_argument ();
+extern bool_t xdr_DATA ();
+extern bool_t xdr_NODE ();
+extern bool_t xdr_Queue ();
+extern bool_t xdr_message ();
+extern bool_t xdr_user ();
 extern bool_t xdr_get_message_1_argument ();
 
 #endif /* K&R C */
