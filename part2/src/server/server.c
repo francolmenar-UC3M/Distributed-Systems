@@ -238,11 +238,13 @@ int process_data(int s_local, char* operation) {
 
 
         /* FILE CONTENT */
-      char argument6[size];
-      if (readLine(s_local, argument6, size) == -1) {
-              fprintf(stderr, "ERROR reading line\n");
-              return 2;
-            }
+      char argument6[size+1];
+      printf("SIZE: %d\n", size);
+      if (recv(s_local, argument6, (size+1), 0) < 0) {
+        fprintf(stderr, "ERROR reading line\n");
+        return 2;
+      }
+      printf("FILE CONTENT: %s\n", argument6);
 
 
       return sendAttach(argument1, argument2, argument3, argument4, argument6);
@@ -541,13 +543,13 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       return 2;
     }
 
-    /*
+    
     printf("SENDER: %s\n", sender);
     printf("RECEIVER: %s\n", receiver);
     printf("MESSAGE: %s\n", message);
     printf("FILENAME: %s\n", fileName);
     printf("FILE CONTENT: %s\n", fileContent);
-    */
+    
 
     // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!
 
@@ -607,6 +609,7 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       sendToClient(sd, receiver_message->data.mes->text);
       sendToClient(sd, receiver_message->data.mes->fileName);
       sendToClient(sd, fileContent);
+      printf("File content: %s\n", fileContent);
 
       printf("SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
     }

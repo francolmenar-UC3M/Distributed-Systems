@@ -102,11 +102,12 @@ class clientPart2 {
         byte[] msg = new byte[maxSizeMsg];
         try {
             if ( (input.read(msg)) < 0){ // read the String sent by the server
-                System.out.println("c> Error reading the data from the server");
+                System.out.println("c> Error reading the data from the server1");
             }
         } catch (IOException e) {
-            System.out.println("c> Error reading the data from the server");
-            return null;
+            System.out.println(new String(msg));
+            System.out.println("c> Error reading the data from the server2");
+            //return null;
         }
         int end = -1;
         for(int i = 0; i < msg.length; i++){ // Search the end of file
@@ -116,7 +117,7 @@ class clientPart2 {
             }
         }
         if(end == -1){ // If no EOF has been found
-            System.out.println("c> Error reading the data from the server");
+            System.out.println("c> Error reading the data from the server3");
         }
         String aux = new String(msg);
         return aux.substring(0, end); // Return the message receive until the EOF
@@ -176,7 +177,7 @@ class clientPart2 {
         }
 
         while (line != null) {
-            //line += "\n";
+            line += "\n";
             key += line;
             try {
                 line = reader.readLine();
