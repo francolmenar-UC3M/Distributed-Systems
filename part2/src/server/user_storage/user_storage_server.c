@@ -133,7 +133,6 @@ int *
 add_message_1_svc(struct message msg,  struct svc_req *rqstp)
 {
 	static int  result;
-	printf("OOOOOOOOOO %s to %s : %s\n", msg.from_user, msg.to_user, msg.text);
 
 	if ((strlen(msg.text)+1) > MAXSIZE) {
 	 result = 2;
@@ -144,7 +143,6 @@ add_message_1_svc(struct message msg,  struct svc_req *rqstp)
 	// receiver_message->data.mes = &msg;
 
 	insert_msg(head_messages, (void*)&msg);
-	printf("OOOOOOOOOO %s to %s : %s\n", msg.from_user, msg.to_user, msg.text);
 
 	result = 0;
 
