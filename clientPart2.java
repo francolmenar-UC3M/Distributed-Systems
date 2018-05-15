@@ -298,7 +298,7 @@ class clientPart2 {
      */
     private static void register(String user){
         if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
-        
+
         String [] msg = {"c> REGISTER OK", "c> USERNAME IN USE", "c> REGISTER FAIL", "REGISTER BROKEN"}; // error messages
         dealWithErrors(registerCommunication(user, REGISTER,"-1", "NONE", "-1"), msg); // Register the new user
     }
@@ -347,8 +347,8 @@ class clientPart2 {
         if(!checkNullParameters(new String[]{user},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
 
         String [] msg = {"c> DISCONNECT OK", "c> DISCONNECT FAIL / USER DOES NOT EXIST", "c> DISCONNECT FAIL / USER NOT CONNECTED", "c> DISCONNECT FAIL"}; // error messages
-        dealWithErrors(registerCommunication(user, DISCONNECT, "-1", "NONE", "-1"), msg); // Perform the connection
         if(user.equals(userName)){ // check if the disconnected user is the one connected in this computer
+            dealWithErrors(registerCommunication(user, DISCONNECT, "-1", "NONE", "-1"), msg); // Perform the connection
             userName = null; // set the user connected to the system to null
 
             if(thread != null){thread.interrupt();} // Interrupt the thread execution
@@ -361,6 +361,9 @@ class clientPart2 {
             }catch (IOException e) {
                 // Thread finished
             }
+        }
+        else{
+            System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
         }
 
     }
@@ -379,6 +382,12 @@ class clientPart2 {
         if(!checkNullParameters(new String[]{user, message},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
 
         String [] msg = {"c> SEND OK - MESSAGE " , "c> SEND FAIL / USER DOES NOT EXIST", "c> SEND FAIL", "SEND BROKEN"}; // error messages
+
+        if(user.equals(userName)){
+            System.out.println("c> SEND FAIL / USER DOES NOT EXIST");
+            return;
+        }
+
         RC result = registerCommunication(user, SEND, "-1", message, "-1"); // Execute the sending and obtaining the result
         msg[0] += "" + idMessage; // Concatenate the id of the message to the message
         dealWithErrors(result, msg); // Perform the connection
@@ -397,6 +406,11 @@ class clientPart2 {
      */
     private static void sendAttach(String user, String fileName, String message){
         if(!checkNullParameters(new String[]{user, fileName, message},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
+
+        if(user.equals(userName)){
+            System.out.println("c> SENDATTACH FAIL / USER DOES NOT EXIST");
+            return;
+        }
 
         /* Check the file exists */
         File f = new File(fileName);

@@ -136,28 +136,17 @@ public class Connect_Thread2 extends Thread {
         }
         File newFile = new File(fileName);
         try {
-
             newFile.createNewFile();  // create the new file
-        System.out.println("1");
-
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-                    System.out.println("1");
-
             writer.write(fileContent); // write the content received into the new file
-                    System.out.println("1");
-
             writer.close();
-                    System.out.println("1");
-
         } catch (IOException e) {
-            System.out.print("Error receiving a message from the server 1 \nc> ");
+            System.out.print("Error receiving a message from the server \nc> ");
             return false;
         }
 
         System.out.print("MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg +
                 "\n   File Name: " + fileName + "\n" + fileContent + "\n   END\nc> ");
-
-        //File newFile = new File( System.out.println(file.getAbsolutePath());
         return true;
     }
 }
