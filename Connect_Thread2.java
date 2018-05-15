@@ -18,7 +18,6 @@ public class Connect_Thread2 extends Thread {
         ClassLoader classLoader = clientPart2.class.getClassLoader();
         File file = new File(classLoader.getResource("Connect_Thread2.java").getFile());
         String path = file.getParentFile().getPath(); // Get the current path
-        System.out.print(path);
         PATH = path;
 
         if(!clientPart2.checkNullParameters(new ServerSocket[]{serverSocket},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
@@ -135,16 +134,23 @@ public class Connect_Thread2 extends Thread {
             System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
-        
-        File newFile = new File( PATH + fileName);
+        File newFile = new File(fileName);
         try {
+
             newFile.createNewFile();  // create the new file
+        System.out.println("1");
 
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+                    System.out.println("1");
+
             writer.write(fileContent); // write the content received into the new file
+                    System.out.println("1");
+
             writer.close();
+                    System.out.println("1");
+
         } catch (IOException e) {
-            System.out.print("Error receiving a message from the server\nc> ");
+            System.out.print("Error receiving a message from the server 1 \nc> ");
             return false;
         }
 
