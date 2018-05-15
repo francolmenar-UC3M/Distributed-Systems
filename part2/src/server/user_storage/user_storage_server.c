@@ -8,8 +8,8 @@
 
 #include "user_storage.h"
 
-#include "queue.h"
 #include "dlinkedlist.h"
+#include "md5.h"
 
 dll* head_users;
 dll* head_messages;
@@ -53,7 +53,7 @@ register_user_1_svc(char *username,  struct svc_req *rqstp)
 		new_user->status = 0;
 		new_user->ip_address = 0;
 		new_user->port = 0;
-		new_user->pending_messages = ConstructQueue(10);
+		new_user->pending_messages = NULL;
 		new_user->last_message = 0;
 
 		Node* new_node = getNewNode((void*)new_user);
@@ -139,9 +139,6 @@ add_message_1_svc(struct message msg,  struct svc_req *rqstp)
 	 return &result;
 	}
 
-	// NODE *receiver_message = malloc(sizeof(NODE));
-	// receiver_message->data.mes = &msg;
-
 	insert_msg(head_messages, (void*)&msg);
 
 	result = 0;
@@ -161,6 +158,18 @@ get_total_messages_1_svc(char *username,  struct svc_req *rqstp)
 	return &result;
 }
 
+const char *md5sum(const char *chaine)
+ {
+     struct md5_ctx ctx;
+     unsigned char digest[16];
+     md5_init(&ctx);
+     ctx.size = strlen(chaine);
+     strcpy(ctx.buf, chaine);
+     md5_update(&ctx);
+     md5_final(digest, &ctx);
+     return digest;
+ }
+
 struct message *
 get_message_1_svc(char *username, u_int msg_id,  struct svc_req *rqstp)
 {
@@ -173,8 +182,8 @@ get_message_1_svc(char *username, u_int msg_id,  struct svc_req *rqstp)
 		return NULL;
 	 }
 
-	 /* cALCULATE MD5*/
-	 /* strcpy(md5, md5calculated) */
+	 /* CALCULATE MD5*/
+	 strcpy(((struct message*)mesg->data)->md5, md5sum(((struct message*)mesg->data)->text));
 	 result = *(struct message*)mesg->data;
 
 	return &result;
