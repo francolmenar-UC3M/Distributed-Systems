@@ -1,8 +1,12 @@
+#ifndef DDLIST
+#define DDLIST
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
-#include "user.h"
+#include "user_storage.h"
 
 #define MAXSIZE 256
 
@@ -60,7 +64,7 @@ void printList() {
 	Node* temp = head;
   int counter = 0;
 	while(temp != NULL) {
-		printf("NODE %d: %s, status: %d, %s:%d\n", counter, temp->data->username, temp->data->status, inet_ntoa(*(temp->data->ip_address)), temp->data->port);
+		printf("NODE %d: %s, status: %d, %d\n", counter, temp->data->username, temp->data->status, temp->data->port);
 		temp = temp->next;
     counter++;
 	}
@@ -205,3 +209,5 @@ int getCardinality() {
     pthread_mutex_unlock(&list_lock);
     return count;
 }
+
+#endif

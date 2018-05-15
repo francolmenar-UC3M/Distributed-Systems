@@ -9,71 +9,123 @@
 /* Default timeout can be changed using clnt_control() */
 static struct timeval TIMEOUT = { 25, 0 };
 
-enum clnt_stat 
-init_1(int *clnt_res, CLIENT *clnt)
+int *
+init_1(CLIENT *clnt)
 {
-	 return (clnt_call (clnt, init, (xdrproc_t) xdr_void, (caddr_t) NULL,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	static int clnt_res;
 
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	 if (clnt_call (clnt, init, (xdrproc_t) xdr_void, (caddr_t) NULL,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-register_user_1(char *username, int *clnt_res,  CLIENT *clnt)
+int *
+register_user_1(char *username,  CLIENT *clnt)
 {
-	return (clnt_call(clnt, register_user,
-		(xdrproc_t) xdr_char, (caddr_t) &username,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	static int clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, register_user,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &username,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-unregister_user_1(char *username, int *clnt_res,  CLIENT *clnt)
+int *
+unregister_user_1(char *username,  CLIENT *clnt)
 {
-	return (clnt_call(clnt, unregister_user,
-		(xdrproc_t) xdr_char, (caddr_t) &username,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	static int clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, unregister_user,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &username,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-get_user_1(char *username, struct user *usr, int *clnt_res,  CLIENT *clnt)
+int *
+add_user_1(struct user usr,  CLIENT *clnt)
 {
-	get_user_1_argument arg;
-	arg.username = username;
-	arg.usr = usr;
-	return (clnt_call (clnt, get_user, (xdrproc_t) xdr_get_user_1_argument, (caddr_t) &arg,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	static int clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, add_user,
+		(xdrproc_t) xdr_user, (caddr_t) &usr,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-add_message_1(struct message msg, int *clnt_res,  CLIENT *clnt)
+struct user *
+get_user_1(char *username,  CLIENT *clnt)
 {
-	return (clnt_call(clnt, add_message,
+	static struct user clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, get_user,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &username,
+		(xdrproc_t) xdr_user, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
+}
+
+int *
+add_message_1(struct message msg,  CLIENT *clnt)
+{
+	static int clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, add_message,
 		(xdrproc_t) xdr_message, (caddr_t) &msg,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-get_total_messages_1(char *username, int *clnt_res,  CLIENT *clnt)
+int *
+get_total_messages_1(char *username,  CLIENT *clnt)
 {
-	return (clnt_call(clnt, get_total_messages,
-		(xdrproc_t) xdr_char, (caddr_t) &username,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	static int clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, get_total_messages,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &username,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
 
-enum clnt_stat 
-get_message_1(char *username, u_int msg_id, char *md5, struct message *msg, int *clnt_res,  CLIENT *clnt)
+struct message *
+get_message_1(char *username, u_int msg_id,  CLIENT *clnt)
 {
 	get_message_1_argument arg;
+	static struct message clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	arg.username = username;
 	arg.msg_id = msg_id;
-	arg.md5 = md5;
-	arg.msg = msg;
-	return (clnt_call (clnt, get_message, (xdrproc_t) xdr_get_message_1_argument, (caddr_t) &arg,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
+	if (clnt_call (clnt, get_message, (xdrproc_t) xdr_get_message_1_argument, (caddr_t) &arg,
+		(xdrproc_t) xdr_message, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
 }
