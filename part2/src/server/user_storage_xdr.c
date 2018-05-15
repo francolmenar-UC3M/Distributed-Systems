@@ -63,6 +63,9 @@ xdr_message (XDR *xdrs, message *objp)
 	 if (!xdr_vector (xdrs, (char *)objp->text, 256,
 		sizeof (char), (xdrproc_t) xdr_char))
 		 return FALSE;
+	 if (!xdr_vector (xdrs, (char *)objp->filename, 256,
+		sizeof (char), (xdrproc_t) xdr_char))
+		 return FALSE;
 	return TRUE;
 }
 
