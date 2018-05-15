@@ -476,6 +476,18 @@ class client {
             System.out.println("Invalid IP address");
             return;
         }
+
+        /* *** Handle Control + C *** */
+        final Thread mainThread = Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.out.print("\n");
+                if(userName != null){
+                    disconnect(userName);
+                }
+            }
+        });
+
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
         shell();
