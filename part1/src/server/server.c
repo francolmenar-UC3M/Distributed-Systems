@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <fcntl.h>
@@ -253,7 +254,7 @@ int connect_user(int s_local, char* username){
     printf("s> CONNECT %s FAIL\n", username);
     return 1;
   }
-  //User is already connected
+    //User is already connected
   if(user_node->data->status != 0){
     printf("s> CONNECT %s FAIL\n", username);
     return 2;
@@ -293,7 +294,6 @@ int connect_user(int s_local, char* username){
 
         sd = socket(AF_INET, SOCK_STREAM, 0);
         if (sd == -1) {
-          /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
           return 3;
         }
 
@@ -308,9 +308,6 @@ int connect_user(int s_local, char* username){
 
         NODE *queue_message = Dequeue(user_connected->data->pending_messages);
 
-        /*** PUERTO DE VERDAD ***/
-        // sendToClient(SOCKET, queue_message->data.mes->text)
-        //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
         sprintf(msg_id_in_char, "%u", queue_message->data.mes->id);
 
         sendToClient(sd, send_message);
@@ -323,10 +320,9 @@ int connect_user(int s_local, char* username){
         printf("s> SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
       }
     }
+      printf("s> CONNECT %s OK\n", username);
   }
-
   return 0;
-
 }
 
 
