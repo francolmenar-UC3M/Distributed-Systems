@@ -277,9 +277,10 @@ void* process_request(void* s) {
   send(s_local, &return_code, 1, MSG_NOSIGNAL);
 
   /* If we are sending a message, we also return to the sender the message id */
-  if(strcmp(operation, "SEND\0") == 0){
+  if(strcmp(operation, "SEND\0") == 0 || strcmp(operation, "SENDATTACH\0") == 0){
     char id_toClient[MAX_LINE];
     sprintf(id_toClient, "%u", (next_message_id-1));
+    printf("ID: %s\n", id_toClient);
     sendToClient(s_local, id_toClient);
   }
   close(s_local);
@@ -539,11 +540,14 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
     if(senderNode->data->status == FALSE){
       return 2;
     }
+
+    /*
     printf("SENDER: %s\n", sender);
     printf("RECEIVER: %s\n", receiver);
     printf("MESSAGE: %s\n", message);
     printf("FILENAME: %s\n", fileName);
     printf("FILE CONTENT: %s\n", fileContent);
+    */
 
     // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!
 
@@ -565,6 +569,7 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
     strcpy(receiver_message->data.mes->to_user, receiver);
     strcpy(receiver_message->data.mes->text, message);
     strcpy(receiver_message->data.mes->fileName, fileName);
+    //store fileContent
 
     /* If the receiver is disconnected */
     if(receiverNode->data->status == FALSE){
@@ -593,15 +598,15 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       }
 
       char msg_id_in_char[11];
-      char * send_message = "SEND_MESSAGE";
+      char * send_attach = "SEND_ATTACH";
       sprintf(msg_id_in_char, "%u", receiver_message->data.mes->id);
 
-      sendToClient(sd, send_message);
+      sendToClient(sd, send_attach);
       sendToClient(sd, senderNode->data->username);
       sendToClient(sd, msg_id_in_char);
       sendToClient(sd, receiver_message->data.mes->text);
       sendToClient(sd, receiver_message->data.mes->fileName);
-
+      sendToClient(sd, fileContent);
 
       printf("SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
     }
