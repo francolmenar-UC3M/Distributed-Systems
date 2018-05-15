@@ -5,6 +5,7 @@ import java.net.Socket;
 public class Connect_Thread2 extends Thread {
     private static final String SEND_MESSAGE = "SEND_MESSAGE";
     private static final String SEND_ATTACH = "SEND_ATTACH";
+    private static String PATH = null;
 
     private static ServerSocket serverSocket; // socket to listen to the server
 
@@ -13,6 +14,13 @@ public class Connect_Thread2 extends Thread {
     }
 
     public void run(){
+
+        ClassLoader classLoader = clientPart2.class.getClassLoader();
+        File file = new File(classLoader.getResource("Connect_Thread2.java").getFile());
+        String path = file.getParentFile().getPath(); // Get the current path
+        System.out.print(path);
+        PATH = path;
+
         if(!clientPart2.checkNullParameters(new ServerSocket[]{serverSocket},Thread.currentThread().getStackTrace()[1].getMethodName())){return;} // check for the validity of the parameters
 
         String operation; // the operation to be performed
@@ -127,13 +135,8 @@ public class Connect_Thread2 extends Thread {
             System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
-
-        /* Crete the new file received */
-        ClassLoader classLoader = clientPart2.class.getClassLoader();
-        File file = new File(classLoader.getResource("Connect_Thread2.java").getFile());
-        String path = file.getParentFile().getPath(); // Get the current path
-
-        File newFile = new File( path + fileName);
+        
+        File newFile = new File( PATH + fileName);
         try {
             newFile.createNewFile();  // create the new file
 
