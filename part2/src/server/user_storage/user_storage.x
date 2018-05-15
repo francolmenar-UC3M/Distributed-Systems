@@ -36,9 +36,10 @@ program USERSTORAGE {
     int init() = 1;
     int register_user(string username) = 2;
     int unregister_user(string username)   = 3;
-    struct user get_user(string username) = 4;
-    int add_message(struct message msg)     = 5;
-    int get_total_messages(string username)  = 6;
-    struct message get_message(string username, unsigned int msg_id) = 7;
+    int add_user(struct user usr) = 4;
+    struct user get_user(string username) = 5;
+    int add_message(struct message msg)     = 6;
+    int get_total_messages(string username)  = 7;
+    struct message get_message(string username, unsigned int msg_id) = 8;
   } = 1;
 } = 98;

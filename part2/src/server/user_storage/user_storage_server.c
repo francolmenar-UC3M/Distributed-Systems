@@ -11,23 +11,26 @@
 #include "queue.h"
 #include "dlinkedlist.h"
 
-Node* head_users;
-Node* head_messages;
+dll* head_users;
+dll* head_messages;
 
 unsigned int next_message_id;
 
-pthread_mutex_t message_id_lock;
+pthread_mutex_t message_id_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int *
 init_1_svc(struct svc_req *rqstp)
 {
 	static int  result;
 
-	pthread_mutex_init(&message_id_lock, NULL);
+	// pthread_mutex_init(&message_id_lock, NULL);
 	next_message_id = 0;
 
 	destroyList(head_users);
 	destroyList(head_messages);
+
+	head_users = createList();
+	head_messages = createList();
 
 	result = 0;
 
@@ -93,6 +96,21 @@ unregister_user_1_svc(char *username,  struct svc_req *rqstp)
 	return &result;
 }
 
+int *
+add_user_1_svc(struct user usr, struct svc_req *rqstp)
+{
+	static int result;
+	Node* newNode = getNewNode((void*)&usr);
+
+	if (search_user(head_users, usr.username) != NULL) {
+		result = modify_user(head_users, newNode);
+	} else {
+		result = insert_user(head_users, newNode);
+	}
+
+	return &result;
+}
+
 struct user *
 get_user_1_svc(char *username,  struct svc_req *rqstp)
 {
@@ -115,31 +133,19 @@ int *
 add_message_1_svc(struct message msg,  struct svc_req *rqstp)
 {
 	static int  result;
+	printf("OOOOOOOOOO %s to %s : %s\n", msg.from_user, msg.to_user, msg.text);
 
 	if ((strlen(msg.text)+1) > MAXSIZE) {
 	 result = 2;
 	 return &result;
 	}
 
-	Node* senderNode = search_user(head_users, msg.from_user);
-	Node* receiverNode = search_user(head_users, msg.to_user);
-
-	if((senderNode == NULL) || (receiverNode == NULL)) {
-		result = 1;
-		return &result;
-	}
-
-	if (((struct user*)senderNode->data)->status == 0) {
-		 result = 2;
-		 return &result;
-	}
-
-	NODE *receiver_message = malloc(sizeof(NODE));
-	receiver_message->data.mes = &msg;
+	// NODE *receiver_message = malloc(sizeof(NODE));
+	// receiver_message->data.mes = &msg;
 
 	insert_msg(head_messages, (void*)&msg);
+	printf("OOOOOOOOOO %s to %s : %s\n", msg.from_user, msg.to_user, msg.text);
 
-	Enqueue(((struct user*)receiverNode->data)->pending_messages, receiver_message);
 	result = 0;
 
 	return &result;

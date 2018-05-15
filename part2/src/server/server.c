@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
-#include "message.h"
 #include <netdb.h>
 #include <limits.h>
 
@@ -15,16 +14,13 @@
 #include <string.h>
 #include <errno.h>
 
+#include "user_storage.h"
 #include "dlinkedlist.c"
 #include "read_line.h"
-
-
-#define FALSE 0
-#define TRUE 1
+#include "queue.h"
 
 #define LISTEN_BACKLOG 50
 #define MAX_LINE 256
-
 
 pthread_mutex_t mutex_msg;
 pthread_mutex_t message_id_lock;
@@ -69,6 +65,15 @@ int main(int argc, char* argv[]) {
     }
 
     next_message_id = 1;
+
+    CLIENT* clnt;
+    clnt = clnt_create ("localhost", USERSTORAGE, USERSTORAGEVER, "tcp");
+    if (clnt == NULL) {
+      fprintf(stderr, "s> INIT SERVER FAIL\n");
+      return 2;
+  	}
+    init_1(clnt);
+    clnt_destroy(clnt);
 
     server_port = atoi(argv[2]);
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // Open socket
@@ -136,20 +141,30 @@ int main(int argc, char* argv[]) {
     }
 }
 
-int register_user(struct sockaddr_in* client_addr, char *username) {
+int user_register(struct sockaddr_in* client_addr, char *username) {
   if (search(username) != NULL) {
-    printf("s> REGISTER %s FAIL\n", username);
+    fprintf(stderr, "s> REGISTER %s FAIL\n", username);
     return 1;
   } else {
     struct user *new_user = (struct user*)malloc(sizeof(struct user));
     strcpy(new_user->username, username);
     new_user->status = 0;
-    new_user->ip_address = &client_addr->sin_addr;
+    new_user->ip_address = 0;
     new_user->port = ntohs(client_addr->sin_port);
     new_user->pending_messages = ConstructQueue(10);
     new_user->last_message = 0;
 
     Node* new_node = getNewNode(new_user);
+
+    CLIENT* clnt;
+    clnt = clnt_create ("localhost", USERSTORAGE, USERSTORAGEVER, "tcp");
+    if (clnt == NULL) {
+      fprintf(stderr, "s> REGISTER %s FAIL\n", username);
+      return 2;
+  	}
+    register_user_1(username, clnt);
+    clnt_destroy(clnt);
+
     insert(new_node);
     printf("s> REGISTER %s OK\n", username);
   }
@@ -174,7 +189,9 @@ int process_data(int s_local, char* operation) {
     socklen_t size;
     size = sizeof(struct sockaddr_in);
     getpeername(s_local, (struct sockaddr *)&client_addr, &size);
-    return register_user(&client_addr, argument1);
+    int result;
+    result = user_register(&client_addr, argument1);
+    return result;
 
   } else if (strcmp(operation, "UNREGISTER\0") == 0) {
     return unregister(argument1);
@@ -185,7 +202,6 @@ int process_data(int s_local, char* operation) {
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
   } else if (strcmp(operation, "SEND\0") == 0) {
-    printf("entro\n");
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
@@ -199,10 +215,12 @@ int process_data(int s_local, char* operation) {
     //assign receiver
     //assign message
     //send_message(username, receiver, message);
+    /*
     printf("OP: %s\n", operation);
     printf("ARG1: %s\n", argument1);
     printf("ARG2: %s\n", argument2);
     printf("ARG3: %s\n", argument3);
+    */
     return send_message(argument1, argument2, argument3);
   } else {
     fprintf(stderr, "s> ERROR MESSAGE FORMAT");
@@ -274,7 +292,7 @@ int connect_user(int s_local, char* username){
     struct user *data_connected = (struct user*) malloc(sizeof(struct user));
     strcpy(data_connected->username, username);
     data_connected->status = TRUE;
-    data_connected->ip_address = &client_addr.sin_addr;
+    data_connected->ip_address = client_addr.sin_addr.s_addr;
 
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
@@ -290,11 +308,8 @@ int connect_user(int s_local, char* username){
     modify(user_connected);
 
     printf("CONNECT %s OK\n", username);
-    printf("CHECKING PENDING MESSAGES\n");
-
 
     if(isEmpty(user_connected->data->pending_messages) == 0){
-      printf("%s HAS PENDING MESSAGES\n", user_connected->data->username);
 
       //Preparing the socket to provide results
       int sd;
@@ -312,7 +327,8 @@ int connect_user(int s_local, char* username){
         }
 
         bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
-        memcpy(&(receiver_client.sin_addr), user_connected->data->ip_address, sizeof(struct in_addr));
+        receiver_client.sin_addr.s_addr = user_connected->data->ip_address;
+        // memcpy(&(receiver_client.sin_addr), user_connected->data->ip_address, sizeof(struct in_addr));
         receiver_client.sin_family = AF_INET;
         receiver_client.sin_port = htons(user_connected->data->port);
 
@@ -344,12 +360,6 @@ int connect_user(int s_local, char* username){
 }
 
 
-
-
-
-
-
-
 int disconnect(char* username){
   //stop CONNECT thread
 
@@ -370,7 +380,7 @@ int disconnect(char* username){
   /* If the user is connected */
   if(userNode->data->status == TRUE){
     userNode->data->status = FALSE;
-    userNode->data->ip_address = NULL;
+    userNode->data->ip_address = 0;
     userNode->data->port = 0;
 
     /* Modify the user node on the data structure */
@@ -388,24 +398,48 @@ int disconnect(char* username){
 }
 
 int unregister(char* username){
+  CLIENT* clnt;
+  clnt = clnt_create("localhost", USERSTORAGE, USERSTORAGEVER, "tcp");
+  if (clnt == NULL) {
+    fprintf(stderr, "s> UNREGISTER %s FAIL\n", username);
+    clnt_destroy(clnt);
+    return 2;
+  }
+  int result = *unregister_user_1(username, clnt);
+  if(result != 0) {
+    fprintf(stderr, "s> UNREGISTER %s FAIL\n", username);
+    clnt_destroy(clnt);
+    return result;
+  }
   /* Succesful unregister */
   if(delete(username) == 0){
     printf("s> UNREGISTER %s OK\n", username);
+    clnt_destroy(clnt);
     return 0;
   }
   /* ERROR: user is not found in the data structure */
   else if(delete(username) == -1){
-    printf("s> UNREGISTER %s FAIL\n", username);
+    fprintf(stderr, "s> UNREGISTER %s FAIL\n", username);
+    clnt_destroy(clnt);
     return 1;
   }
   /* ERROR: any other case */
   else{
-    printf("s> UNREGISTER %s FAIL\n", username);
+    fprintf(stderr, "s> UNREGISTER %s FAIL\n", username);
+    clnt_destroy(clnt);
     return 2;
   }
+  clnt_destroy(clnt);
 }
 
 int send_message(char* sender, char* receiver, char* message){
+
+    CLIENT* clnt;
+    clnt = clnt_create("localhost", USERSTORAGE, USERSTORAGEVER, "tcp");
+    if (clnt == NULL) {
+      fprintf(stderr, "s> SEND FAILED\n");
+      return 2;
+    }
 
     /* The message exceeds the maximum size */
     if((strlen(message)+1) > MAX_LINE){
@@ -466,7 +500,9 @@ int send_message(char* sender, char* receiver, char* message){
       }
 
       bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
-      memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
+      uint32_t ip = receiverNode->data->ip_address;
+      receiver_client.sin_addr.s_addr = ip;
+      // memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
       receiver_client.sin_family = AF_INET;
       receiver_client.sin_port = htons(receiverNode->data->port);
 
@@ -482,6 +518,13 @@ int send_message(char* sender, char* receiver, char* message){
       sendToClient(sd, senderNode->data->username);
       sendToClient(sd, msg_id_in_char);
       sendToClient(sd, receiver_message->data.mes->text);
+
+      int* result = add_message_1(*(receiver_message->data.mes), clnt);
+      if (*result != 0) {
+        fprintf(stderr, "s> STORE MESSAGE FAILED\n");
+        return *result;
+      }
+      clnt_destroy(clnt);
 
       printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }

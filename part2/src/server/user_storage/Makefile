@@ -3,11 +3,11 @@
 
 # Parameters
 
-CLIENT = user_storage_client
+CLIENT =
 SERVER = user_storage_server
 
-SOURCES_CLNT.c = user_storage_client.c user_storage_clnt.c user_storage_xdr.c dlinkedlist.c queue.c
-SOURCES_CLNT.h = dlinkedlist.h queue.h
+SOURCES_CLNT.c =
+SOURCES_CLNT.h =
 SOURCES_SVC.c = user_storage_server.c user_storage_svc.c user_storage_xdr.c dlinkedlist.c queue.c
 SOURCES_SVC.h = dlinkedlist.h queue.h
 SOURCES.x = user_storage.x

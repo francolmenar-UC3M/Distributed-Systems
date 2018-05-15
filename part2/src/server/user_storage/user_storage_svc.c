@@ -34,6 +34,12 @@ _unregister_user_1 (char * *argp, struct svc_req *rqstp)
 	return (unregister_user_1_svc(*argp, rqstp));
 }
 
+static int *
+_add_user_1 (struct user  *argp, struct svc_req *rqstp)
+{
+	return (add_user_1_svc(*argp, rqstp));
+}
+
 static struct user *
 _get_user_1 (char * *argp, struct svc_req *rqstp)
 {
@@ -64,6 +70,7 @@ userstorage_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	union {
 		char *register_user_1_arg;
 		char *unregister_user_1_arg;
+		struct user add_user_1_arg;
 		char *get_user_1_arg;
 		struct message add_message_1_arg;
 		char *get_total_messages_1_arg;
@@ -94,6 +101,12 @@ userstorage_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
 		local = (char *(*)(char *, struct svc_req *)) _unregister_user_1;
+		break;
+
+	case add_user:
+		_xdr_argument = (xdrproc_t) xdr_user;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) _add_user_1;
 		break;
 
 	case get_user:
