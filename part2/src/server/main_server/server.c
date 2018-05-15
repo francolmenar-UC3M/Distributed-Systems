@@ -616,7 +616,7 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
     strcpy(receiver_message->data.mes->from_user, sender);
     strcpy(receiver_message->data.mes->to_user, receiver);
     strcpy(receiver_message->data.mes->text, message);
-    strcpy(receiver_message->data.mes->fileName, fileName);
+    strcpy(receiver_message->data.mes->filename, fileName);
     //store fileContent
 
     /* If the receiver is disconnected */
@@ -637,7 +637,8 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       }
 
       bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
-      memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
+      receiver_client.sin_addr.s_addr = receiverNode->data->ip_address;
+      // memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
       receiver_client.sin_family = AF_INET;
       receiver_client.sin_port = htons(receiverNode->data->port);
 
@@ -653,11 +654,11 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       sendToClient(sd, senderNode->data->username);
       sendToClient(sd, msg_id_in_char);
       sendToClient(sd, receiver_message->data.mes->text);
-      sendToClient(sd, receiver_message->data.mes->fileName);
+      sendToClient(sd, receiver_message->data.mes->filename);
       sendToClient(sd, fileContent);
       // printf("File content: %s\n", fileContent);
 
-      printf("s> SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
+      printf("s> SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->filename, sender, receiver);
     }
     return 0;
 }
