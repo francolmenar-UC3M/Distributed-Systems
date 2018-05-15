@@ -81,13 +81,12 @@ int main(int argc, char* argv[]) {
     struct ifreq ifr;
     socklen_t peer_addr_size = sizeof(struct sockaddr_in);
 
-    // TODO: Check numeric input
     if (argc != 3 || strcmp(argv[1], "-p") != 0) {
       fprintf(stderr, "%s\n\n", "usage: ./server -p <port>");
       return -1;
     }
 
-    next_message_id = 1;
+    next_message_id = 0;
 
     CLIENT* clnt;
     clnt = clnt_create ("localhost", USERSTORAGE, USERSTORAGEVER, "tcp");
@@ -113,7 +112,7 @@ int main(int argc, char* argv[]) {
     bzero((char *)&ifr, sizeof(struct ifreq));
     ifr.ifr_addr.sa_family = AF_INET; // Set family IPv4
     //snprintf(ifr.ifr_name, IFNAMSIZ, "eth0");
-    snprintf(ifr.ifr_name, IFNAMSIZ, "lo"); // TODO: Default network interface
+    snprintf(ifr.ifr_name, IFNAMSIZ, "lo");
     ioctl(server_socket, SIOCGIFADDR, &ifr);
     server_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
     /**********************************************/
@@ -146,7 +145,7 @@ int main(int argc, char* argv[]) {
     pthread_t thr;
 
     printf("s> init server %s:%d\n", server_ip, server_port);
-    printf("s> ");
+    printf("s> \n");
 
     while(TRUE) {
 
@@ -199,7 +198,7 @@ int process_data(int s_local, char* operation) {
   char argument1[MAX_LINE];
 
   if (readLine(s_local, argument1, MAX_LINE) == -1) {
-    fprintf(stderr, "ERROR reading line\n");
+    fprintf(stderr, "s> ERROR reading line\n");
     return 2;
   }
 
@@ -229,13 +228,13 @@ int process_data(int s_local, char* operation) {
     /* RECEIVER */
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
-      fprintf(stderr, "ERROR reading line\n");
+      fprintf(stderr, "s> ERROR reading line\n");
       return 2;
     }
     /* MESSAGE */
     char argument3[MAX_LINE];
     if (readLine(s_local, argument3, MAX_LINE) == -1) {
-      fprintf(stderr, "ERROR reading line\n");
+      fprintf(stderr, "s> ERROR reading line\n");
       return 2;
     }
     else if (strcmp(operation, "SEND\0") == 0) {
@@ -244,7 +243,7 @@ int process_data(int s_local, char* operation) {
       /* FILE NAME */
       char argument4[MAX_LINE];
       if (readLine(s_local, argument4, MAX_LINE) == -1) {
-        fprintf(stderr, "ERROR reading line\n");
+        fprintf(stderr, "s> ERROR reading line\n");
         return 2;
       }
 
@@ -259,10 +258,10 @@ int process_data(int s_local, char* operation) {
       char argument6[size+1];
       printf("SIZE: %d\n", size);
       if (recv(s_local, argument6, (size+1), 0) < 0) {
-        fprintf(stderr, "ERROR reading line\n");
+        fprintf(stderr, "s> ERROR reading line\n");
         return 2;
       }
-      printf("FILE CONTENT: %s\n", argument6);
+      // printf("FILE CONTENT: %s\n", argument6);
 
 
       return sendAttach(argument1, argument2, argument3, argument4, argument6);
@@ -287,8 +286,8 @@ void* process_request(void* s) {
   char operation[MAX_LINE];
   bzero(operation, MAX_LINE);
   if (readLine(s_local, operation, MAX_LINE) == -1) {
-    fprintf(stderr, "ERROR reading line\n");
-    error = -2;
+    fprintf(stderr, "s> ERROR reading line\n");
+    error = 2;
     pthread_exit(&error);
   }
 
@@ -300,7 +299,7 @@ void* process_request(void* s) {
   if(strcmp(operation, "SEND\0") == 0 || strcmp(operation, "SENDATTACH\0") == 0){
     char id_toClient[MAX_LINE];
     sprintf(id_toClient, "%u", (next_message_id-1));
-    printf("ID: %s\n", id_toClient);
+    // printf("ID: %s\n", id_toClient);
     sendToClient(s_local, id_toClient);
   }
   close(s_local);
@@ -323,12 +322,12 @@ int connect_user(int s_local, char* username){
 
   //User does not exist
   if(user_node == NULL){
-    printf("CONNECT %s FAIL\n", username);
+    printf("s> CONNECT %s FAIL\n", username);
     return 1;
   }
   //User is already connected
   if(user_node->data->status != 0){
-    printf("CONNECT %s FAIL\n", username);
+    printf("s> CONNECT %s FAIL\n", username);
     return 2;
   }
   else{ //User is disconnected
@@ -341,7 +340,7 @@ int connect_user(int s_local, char* username){
 
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
-      fprintf(stderr, "ERROR reading line\n");
+      fprintf(stderr, "s> ERROR reading line\n");
       return 2;
     }
     data_connected->port = atoi(argument2);
@@ -351,8 +350,6 @@ int connect_user(int s_local, char* username){
     struct Node *user_connected = getNewNode(data_connected);
     //Update node
     modify(user_connected);
-
-    printf("CONNECT %s OK\n", username);
 
     if(isEmpty(user_connected->data->pending_messages) == 0){
 
@@ -383,7 +380,6 @@ int connect_user(int s_local, char* username){
 
         NODE *queue_message = Dequeue(user_connected->data->pending_messages);
 
-        /*** PUERTO DE VERDAD ***/
         // sendToClient(SOCKET, queue_message->data.mes->text)
         //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
         sprintf(msg_id_in_char, "%u", queue_message->data.mes->id);
@@ -395,7 +391,7 @@ int connect_user(int s_local, char* username){
 
         close(sd);
 
-        printf("SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
+        printf("s> SEND MESSAGE %d FROM %s TO %s\n", queue_message->data.mes->id, queue_message->data.mes->from_user, user_connected->data->username);
       }
     }
   }
@@ -530,7 +526,7 @@ int send_message(char* sender, char* receiver, char* message){
     if(receiverNode->data->status == FALSE){
       /* Put the message in the message queue */
       Enqueue(search(receiver)->data->pending_messages, receiver_message);
-      printf("MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
+      printf("s> MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
       return 0;
     } else {
 
@@ -570,7 +566,7 @@ int send_message(char* sender, char* receiver, char* message){
       }
       clnt_destroy(clnt);
 
-      printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
+      printf("s> SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }
     return 0;
 }
@@ -595,13 +591,11 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       return 2;
     }
 
-
-    printf("SENDER: %s\n", sender);
-    printf("RECEIVER: %s\n", receiver);
-    printf("MESSAGE: %s\n", message);
-    printf("FILENAME: %s\n", fileName);
-    printf("FILE CONTENT: %s\n", fileContent);
-
+    // printf("SENDER: %s\n", sender);
+    // printf("RECEIVER: %s\n", receiver);
+    // printf("MESSAGE: %s\n", message);
+    // printf("FILENAME: %s\n", fileName);
+    // printf("FILE CONTENT: %s\n", fileContent);
 
     // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!
 
@@ -629,7 +623,7 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
     if(receiverNode->data->status == FALSE){
       /* Put the message in the message queue */
       Enqueue(search(receiver)->data->pending_messages, receiver_message);
-      printf("MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
+      printf("s> MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
       return 0;
     } else {
 
@@ -661,9 +655,9 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       sendToClient(sd, receiver_message->data.mes->text);
       sendToClient(sd, receiver_message->data.mes->fileName);
       sendToClient(sd, fileContent);
-      printf("File content: %s\n", fileContent);
+      // printf("File content: %s\n", fileContent);
 
-      printf("SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
+      printf("s> SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
     }
     return 0;
 }
