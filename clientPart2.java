@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.util.regex.Pattern;
 
 import gnu.getopt.Getopt;
@@ -177,9 +176,11 @@ class clientPart2 {
         }
 
         while (line != null) {
+            //line += "\n";
             key += line;
             try {
                 line = reader.readLine();
+
             } catch (IOException e) {
                 return null;
             }
@@ -221,6 +222,7 @@ class clientPart2 {
                     sendString(socket, fileName); // send the fileName
                     String fileRead = readFile(fileName);
                     sendInt(socket, fileRead.length()); // Send the length of the file
+                    System.out.print(""); // NO QUITAR
                     sendString(socket, fileRead); // send the content of the file
                 }
             }
@@ -231,7 +233,7 @@ class clientPart2 {
             }
 
             /* SEND AND CORRECT RESULT */
-            if(operation.equals(SEND) && result == 0x00) {
+            if((operation.equals(SEND)  ||operation.equals(SENDATTACH)) && result == 0x00) {
                 DataInputStream input = new DataInputStream(socket.getInputStream()); // input for receiving the idMessage
                 idMessage = receiveString(input); // Get the id of the message
 
@@ -399,6 +401,7 @@ class clientPart2 {
         File f = new File(fileName);
         if(!f.exists() || f.isDirectory()) {
             System.out.println("c> File does not exists");
+            return;
         }
 
         String [] msg = {"c> SENDATTACH OK - MESSAGE " , "c> SENDATTACH FAIL / USER DOES NOT EXIST", "c> SENDATTACH FAIL", "SENDATTACH BROKEN"}; // error messages
@@ -563,6 +566,18 @@ class clientPart2 {
             System.out.println("Invalid IP address");
             return;
         }
+
+        /* *** Handle Control + C *** */
+        final Thread mainThread = Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.out.print("\n");
+                if(userName != null){
+                    disconnect(userName);
+                }
+            }
+        });
+
         _server = argv[1]; // name of the server
         _port = Integer.parseInt(argv[3]); // port number
         shell();
