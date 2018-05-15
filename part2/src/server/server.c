@@ -32,8 +32,11 @@ int connect_user(int s_local, char* username);
 int disconnect(char* username);
 int unregister(char* username);
 int send_message(char* sender, char* receiver, char* message);
+int sendAttach(char* sender, char* receiver, char* message, char* fileName, char* fileContent);
 int setMessage(char * str, char * dest);
 int sendToClient(int socket, char * msg);
+int receiveInt(int socket);
+int receiveString(int sock, char* input);
 
 int sendToClient(int socket, char * msg){
     char  str [MAX_LINE];
@@ -48,6 +51,26 @@ int setMessage(char *str, char * dest){
     strcpy(msg, str);
     strcpy(dest, msg);
     return 0;
+}
+
+/* Read a string from the given socket
+ *
+ * @param sock: the socket we are using to transfer data
+ * @return -1 if error
+ */
+int receiveString(int sock, char* input) {
+  memset(input, '\0', sizeof(*input)); /* end of string char */
+
+
+  int k = 0; /* no se por qué se pone esto */
+  while ( 1 ) { /* reading from the socket */
+    int nbytes = recv(sock, &input[k], 1, 0);
+    if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
+    if ( nbytes ==  0 ) { break; }
+    if ( input[k] ==  '\0' ) { break; } /* end of string */
+      k++;
+  }
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -172,6 +195,7 @@ int user_register(struct sockaddr_in* client_addr, char *username) {
 }
 
 int process_data(int s_local, char* operation) {
+  /* SENDER */
   char argument1[MAX_LINE];
 
   if (readLine(s_local, argument1, MAX_LINE) == -1) {
@@ -201,31 +225,51 @@ int process_data(int s_local, char* operation) {
 
   } else if (strcmp(operation, "DISCONNECT\0") == 0) {
     return disconnect(argument1);
-  } else if (strcmp(operation, "SEND\0") == 0) {
+  }
+    /* RECEIVER */
     char argument2[MAX_LINE];
     if (readLine(s_local, argument2, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
       return 2;
     }
+    /* MESSAGE */
     char argument3[MAX_LINE];
     if (readLine(s_local, argument3, MAX_LINE) == -1) {
       fprintf(stderr, "ERROR reading line\n");
       return 2;
     }
-    //assign receiver
-    //assign message
-    //send_message(username, receiver, message);
-    /*
-    printf("OP: %s\n", operation);
-    printf("ARG1: %s\n", argument1);
-    printf("ARG2: %s\n", argument2);
-    printf("ARG3: %s\n", argument3);
-    */
-    return send_message(argument1, argument2, argument3);
-  } else {
-    fprintf(stderr, "s> ERROR MESSAGE FORMAT");
-    return 2;
-  }
+    else if (strcmp(operation, "SEND\0") == 0) {
+      return send_message(argument1, argument2, argument3);
+    } else if (strcmp(operation, "SENDATTACH\0") == 0) {
+      /* FILE NAME */
+      char argument4[MAX_LINE];
+      if (readLine(s_local, argument4, MAX_LINE) == -1) {
+        fprintf(stderr, "ERROR reading line\n");
+        return 2;
+      }
+
+        /* FILE SIZE */
+        char argument5[4];
+        recv(s_local, argument5, 4, 0);
+
+        int size = ntohl(*((int *) &argument5));
+
+
+        /* FILE CONTENT */
+      char argument6[size+1];
+      printf("SIZE: %d\n", size);
+      if (recv(s_local, argument6, (size+1), 0) < 0) {
+        fprintf(stderr, "ERROR reading line\n");
+        return 2;
+      }
+      printf("FILE CONTENT: %s\n", argument6);
+
+
+      return sendAttach(argument1, argument2, argument3, argument4, argument6);
+    } else {
+      fprintf(stderr, "s> ERROR MESSAGE FORMAT");
+      return 2;
+    }
   return 0;
 }
 
@@ -253,9 +297,10 @@ void* process_request(void* s) {
   send(s_local, &return_code, 1, MSG_NOSIGNAL);
 
   /* If we are sending a message, we also return to the sender the message id */
-  if(strcmp(operation, "SEND\0") == 0){
+  if(strcmp(operation, "SEND\0") == 0 || strcmp(operation, "SENDATTACH\0") == 0){
     char id_toClient[MAX_LINE];
     sprintf(id_toClient, "%u", (next_message_id-1));
+    printf("ID: %s\n", id_toClient);
     sendToClient(s_local, id_toClient);
   }
   close(s_local);
@@ -358,7 +403,6 @@ int connect_user(int s_local, char* username){
   return 0;
 
 }
-
 
 int disconnect(char* username){
   //stop CONNECT thread
@@ -529,4 +573,117 @@ int send_message(char* sender, char* receiver, char* message){
       printf("SEND MESSAGE %d FROM %s TO %s\n", receiver_message->data.mes->id, sender, receiver);
     }
     return 0;
+}
+
+int sendAttach(char* sender, char* receiver, char* message, char* fileName, char* fileContent){
+    /* The message exceeds the maximum size */
+    if((strlen(message)+1) > MAX_LINE){
+      return 2;
+    }
+
+    /* Find the two users inside the list */
+    Node* senderNode = search(sender);
+    Node* receiverNode = search(receiver);
+
+    /* If one of the users is not found inside the data structure */
+    if((senderNode == NULL) || (receiverNode == NULL)){
+      return 1;
+    }
+
+    /* If the sender is disconnected */
+    if(senderNode->data->status == FALSE){
+      return 2;
+    }
+
+
+    printf("SENDER: %s\n", sender);
+    printf("RECEIVER: %s\n", receiver);
+    printf("MESSAGE: %s\n", message);
+    printf("FILENAME: %s\n", fileName);
+    printf("FILE CONTENT: %s\n", fileContent);
+
+
+    // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!
+
+    NODE *receiver_message = malloc(sizeof(NODE));
+    receiver_message->data.mes = (struct message*)malloc(sizeof(struct message));
+    pthread_mutex_lock(&message_id_lock);
+    receiver_message->data.mes->id = next_message_id;
+    /* If we exceed the maximum size for an unsigned int*/
+    if(next_message_id + 1 > UINT_MAX){
+      next_message_id = 0;
+    } else {
+      next_message_id++;
+    }
+    pthread_mutex_unlock(&message_id_lock);
+
+    senderNode->data->last_message = receiver_message->data.mes->id;
+
+    strcpy(receiver_message->data.mes->from_user, sender);
+    strcpy(receiver_message->data.mes->to_user, receiver);
+    strcpy(receiver_message->data.mes->text, message);
+    strcpy(receiver_message->data.mes->fileName, fileName);
+    //store fileContent
+
+    /* If the receiver is disconnected */
+    if(receiverNode->data->status == FALSE){
+      /* Put the message in the message queue */
+      Enqueue(search(receiver)->data->pending_messages, receiver_message);
+      printf("MESSAGE %u FROM %s TO %s STORED\n", receiver_message->data.mes->id, sender, receiver);
+      return 0;
+    } else {
+
+      int sd;
+      struct sockaddr_in receiver_client;
+
+      sd = socket(AF_INET, SOCK_STREAM, 0);
+      if (sd == -1) {
+        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
+        return 3;
+      }
+
+      bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
+      memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
+      receiver_client.sin_family = AF_INET;
+      receiver_client.sin_port = htons(receiverNode->data->port);
+
+      if (connect(sd, (struct sockaddr *)&receiver_client, sizeof(struct sockaddr_in)) < 0) {
+        return 3;
+      }
+
+      char msg_id_in_char[11];
+      char * send_attach = "SEND_ATTACH";
+      sprintf(msg_id_in_char, "%u", receiver_message->data.mes->id);
+
+      sendToClient(sd, send_attach);
+      sendToClient(sd, senderNode->data->username);
+      sendToClient(sd, msg_id_in_char);
+      sendToClient(sd, receiver_message->data.mes->text);
+      sendToClient(sd, receiver_message->data.mes->fileName);
+      sendToClient(sd, fileContent);
+      printf("File content: %s\n", fileContent);
+
+      printf("SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->fileName, sender, receiver);
+    }
+    return 0;
+}
+
+
+/* Read an int from the given socket
+ *
+ * @param sock: the socket we are using to transfer data
+ * @return the int read
+ */
+int receiveInt(int sock) {
+  char intBufferCoupReq[MAX_LINE]; /* buffer */
+  memset(intBufferCoupReq, '\0', sizeof(intBufferCoupReq)); /* end of string char */
+
+  int k = 0; /* no se por qué se pone esto */
+  while ( 1 ) { /* reading from the socket */
+    int nbytes = recv(sock, &intBufferCoupReq[k], 1, 0);
+    if ( nbytes == -1 ) { printf("recv error\n"); return -1; }
+    if ( nbytes ==  0 ) { break; }
+    k++;
+  }
+  return ntohl(*((int *) &intBufferCoupReq));
 }
