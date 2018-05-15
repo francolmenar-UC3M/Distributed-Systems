@@ -1,5 +1,4 @@
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -128,8 +127,28 @@ public class Connect_Thread2 extends Thread {
             System.out.print("Error receiving a message from the server\nc> ");
             return false;
         }
+
+        /* Crete the new file received */
+        ClassLoader classLoader = clientPart2.class.getClassLoader();
+        File file = new File(classLoader.getResource("Connect_Thread2.java").getFile());
+        String path = file.getParentFile().getPath(); // Get the current path
+
+        File newFile = new File( path + fileName);
+        try {
+            newFile.createNewFile();  // create the new file
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.write(fileContent); // write the content received into the new file
+            writer.close();
+        } catch (IOException e) {
+            System.out.print("Error receiving a message from the server\nc> ");
+            return false;
+        }
+
         System.out.print("MESSAGE " + msgId + " FROM " + originUser + ":\n" + "   " + msg +
                 "\n   File Name: " + fileName + "\n" + fileContent + "\n   END\nc> ");
+
+        //File newFile = new File( System.out.println(file.getAbsolutePath());
         return true;
     }
 }
