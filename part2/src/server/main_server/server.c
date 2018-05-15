@@ -111,7 +111,6 @@ int main(int argc, char* argv[]) {
 
     bzero((char *)&ifr, sizeof(struct ifreq));
     ifr.ifr_addr.sa_family = AF_INET; // Set family IPv4
-    //snprintf(ifr.ifr_name, IFNAMSIZ, "eth0");
     snprintf(ifr.ifr_name, IFNAMSIZ, "lo");
     ioctl(server_socket, SIOCGIFADDR, &ifr);
     server_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
@@ -256,7 +255,6 @@ int process_data(int s_local, char* operation) {
 
         /* FILE CONTENT */
       char argument6[size+1];
-      printf("SIZE: %d\n", size);
       if (recv(s_local, argument6, (size+1), 0) < 0) {
         fprintf(stderr, "s> ERROR reading line\n");
         return 2;
@@ -299,7 +297,6 @@ void* process_request(void* s) {
   if(strcmp(operation, "SEND\0") == 0 || strcmp(operation, "SENDATTACH\0") == 0){
     char id_toClient[MAX_LINE];
     sprintf(id_toClient, "%u", (next_message_id-1));
-    // printf("ID: %s\n", id_toClient);
     sendToClient(s_local, id_toClient);
   }
   close(s_local);
@@ -364,7 +361,6 @@ int connect_user(int s_local, char* username){
 
         sd = socket(AF_INET, SOCK_STREAM, 0);
         if (sd == -1) {
-          /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
           return 3;
         }
 
@@ -380,8 +376,6 @@ int connect_user(int s_local, char* username){
 
         NODE *queue_message = Dequeue(user_connected->data->pending_messages);
 
-        // sendToClient(SOCKET, queue_message->data.mes->text)
-        //  sendToClient(user_connected->data->port, queue_message->data.mes->text, MAX_LINE);
         sprintf(msg_id_in_char, "%u", queue_message->data.mes->id);
 
         sendToClient(sd, send_message);
@@ -518,10 +512,6 @@ int send_message(char* sender, char* receiver, char* message){
     strcpy(receiver_message->data.mes->to_user, receiver);
     strcpy(receiver_message->data.mes->text, message);
 
-    // printf("Sender from: %s\n", receiver_message->data.mes->from_user);
-    // printf("Sender to: %s\n", receiver_message->data.mes->to_user);
-    // printf("Sender mes: %s\n", receiver_message->data.mes->text);
-
     /* If the receiver is disconnected */
     if(receiverNode->data->status == FALSE){
       /* Put the message in the message queue */
@@ -535,7 +525,6 @@ int send_message(char* sender, char* receiver, char* message){
 
       sd = socket(AF_INET, SOCK_STREAM, 0);
       if (sd == -1) {
-        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
         return 3;
       }
 
@@ -591,12 +580,6 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       return 2;
     }
 
-    // printf("SENDER: %s\n", sender);
-    // printf("RECEIVER: %s\n", receiver);
-    // printf("MESSAGE: %s\n", message);
-    // printf("FILENAME: %s\n", fileName);
-    // printf("FILE CONTENT: %s\n", fileContent);
-
     // Store the files associated with the messages on an independent storage server developed with RPC !!!!!!!!!!!!!
 
     NODE *receiver_message = malloc(sizeof(NODE));
@@ -632,13 +615,11 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
 
       sd = socket(AF_INET, SOCK_STREAM, 0);
       if (sd == -1) {
-        /* fprintf(stderr, "%s\n", "s> Could not create socket");*/
         return 3;
       }
 
       bzero((char *)&receiver_client, sizeof(struct sockaddr_in));
       receiver_client.sin_addr.s_addr = receiverNode->data->ip_address;
-      // memcpy(&(receiver_client.sin_addr), receiverNode->data->ip_address, sizeof(struct in_addr));
       receiver_client.sin_family = AF_INET;
       receiver_client.sin_port = htons(receiverNode->data->port);
 
@@ -656,7 +637,6 @@ int sendAttach(char* sender, char* receiver, char* message, char* fileName, char
       sendToClient(sd, receiver_message->data.mes->text);
       sendToClient(sd, receiver_message->data.mes->filename);
       sendToClient(sd, fileContent);
-      // printf("File content: %s\n", fileContent);
 
       printf("s> SEND ATTACH %d WITH FILE %s FROM %s TO %s\n", receiver_message->data.mes->id, receiver_message->data.mes->filename, sender, receiver);
     }
